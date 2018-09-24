@@ -2,7 +2,7 @@ language: go
 go:
   - "1.11"
 before_install:
-  - export CODECOV_TOKEN="dfe8163e-dd0c-4c2e-9c62-bce7a87eeeff"
+  - export CODECOV_TOKEN="6dddeac9-90d4-4ca6-9ba6-682a37d969c6"
   - export GO111MODULE=on
   - export API=github.com/caigwatkin/slate
 install:
