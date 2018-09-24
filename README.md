@@ -6,7 +6,7 @@
 [![GolangCI](https://golangci.com/badges/github.com/caigwatkin/go.svg)](https://golangci.com)
 [![Go Report Card](https://goreportcard.com/badge/github.com/caigwatkin/go)](https://goreportcard.com/report/github.com/caigwatkin/go)
 
-Golang package for APIs
+Golang package library for APIs
 
 ## Usage
 
