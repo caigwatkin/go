@@ -14,7 +14,7 @@ Golang package library for APIs
 go get -u github.com/caigwatkin/go
 ```
 
-See [github.com/caigwatkin/slate](https://github.com/caigwatkin/slate) for usage in an API server.
+See [github.com/caigwatkin/slate](https://github.com/caigwatkin/slate) for usage in a Go API server.
 
 ## CI/CD
 
