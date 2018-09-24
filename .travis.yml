@@ -1,0 +1,16 @@
+language: go
+go:
+  - "1.11"
+before_install:
+  - export CODECOV_TOKEN="dfe8163e-dd0c-4c2e-9c62-bce7a87eeeff"
+  - export GO111MODULE=on
+  - export API=github.com/caigwatkin/slate
+install:
+  - go get -u github.com/mgechev/revive
+before_script:
+  - go vet -mod=vendor $API/...
+  - revive -formatter=stylish -config=./configs/revive.toml -exclude=./vendor/... ./...
+script:
+  - go test -mod=vendor -coverprofile=coverage.txt -covermode=atomic $API/...
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
