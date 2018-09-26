@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	go_context "github.com/caigwatkin/go/context"
 	go_errors "github.com/caigwatkin/go/errors"
 	go_headers "github.com/caigwatkin/go/http/headers"
 	go_log "github.com/caigwatkin/go/log"
@@ -40,6 +41,16 @@ func ContentJSON(ctx context.Context, headersClient go_headers.Client, logClient
 		return
 	}
 	logInfoResponse(ctx, logClient, code, headers, lenBody, body)
+}
+
+// Created writes location header to response writer with status code Created
+func Created(ctx context.Context, headersClient go_headers.Client, logClient go_log.Client, w http.ResponseWriter, location string) {
+	headers := setHeadersInclDefaults(ctx, headersClient, w, map[string]string{
+		"Location": location,
+	})
+	code := http.StatusCreated
+	w.WriteHeader(code)
+	logInfoResponse(ctx, logClient, code, headers, 0, nil)
 }
 
 // ContentJSON writes a small JSON body to the response writer with status code OK
@@ -93,4 +104,20 @@ func ErrorOrStatus(ctx context.Context, headersClient go_headers.Client, logClie
 	code := http.StatusInternalServerError
 	w.WriteHeader(code)
 	logInfoResponse(ctx, logClient, code, h, 0, nil)
+}
+
+func setHeadersInclDefaults(ctx context.Context, headersClient go_headers.Client, w http.ResponseWriter, headers map[string]string) map[string]string {
+	h := map[string]string{
+		headersClient.CorrelationIDKey(): go_context.CorrelationID(ctx),
+	}
+	if go_context.Test(ctx) {
+		h[headersClient.TestKey()] = go_headers.TestValDefault
+	}
+	for k, v := range headers {
+		h[k] = v
+	}
+	for k, v := range h {
+		w.Header().Set(k, v)
+	}
+	return h
 }
