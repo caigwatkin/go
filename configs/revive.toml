@@ -5,7 +5,7 @@ errorCode = 1
 warningCode = 0
 
 [rule.argument-limit]
-  arguments = [5]
+  arguments = [6]
   severity = "warn"
 [rule.blank-imports]
 [rule.confusing-results]

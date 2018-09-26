@@ -29,6 +29,7 @@ import (
 
 type Client interface {
 	RenderContentJSON(ctx context.Context, w http.ResponseWriter, body []byte)
+	RenderCreated(ctx context.Context, w http.ResponseWriter, location string)
 	RenderHealth(ctx context.Context, w http.ResponseWriter, serviceName string)
 	RenderErrorOrStatus(ctx context.Context, w http.ResponseWriter, err error)
 	MiddlewareDefaults(r *chi.Mux, excludePathsForLogInfoRequests []string)
@@ -53,6 +54,11 @@ func NewClient(logClient go_log.Client, serviceNameForHeaders string) Client {
 // RenderContentJSON in response
 func (c client) RenderContentJSON(ctx context.Context, w http.ResponseWriter, body []byte) {
 	go_render.ContentJSON(ctx, c.headersClient, c.logClient, w, body)
+}
+
+// RenderCreated with location in header
+func (c client) RenderCreated(ctx context.Context, w http.ResponseWriter, location string) {
+	go_render.Created(ctx, c.headersClient, c.logClient, w, location)
 }
 
 // RenderHealth in response
