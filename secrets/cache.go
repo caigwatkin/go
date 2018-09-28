@@ -38,7 +38,7 @@ type Required map[string][]string
 func Combine(from, to Required) Required {
 	for k, v := range from {
 		if s, ok := to[k]; ok {
-			s = append(s, v...)
+			to[k] = append(s, v...)
 		} else {
 			to[k] = v
 		}
