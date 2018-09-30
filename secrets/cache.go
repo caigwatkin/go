@@ -23,7 +23,7 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
+	"github.com/caigwatkin/go/errors"
 )
 
 func (c client) PlaintextFromCache(domain, kind string) (string, error) {

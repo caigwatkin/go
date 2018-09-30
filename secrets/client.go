@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"cloud.google.com/go/storage"
-	"github.com/pkg/errors"
+	"github.com/caigwatkin/go/errors"
 	"golang.org/x/oauth2/google"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 )
@@ -65,9 +65,4 @@ func NewClient(ctx context.Context, env, gcpProjectID, keyRing, key string) (Cli
 		plaintextSecretsCache: make(map[string]string),
 		storageClient:         storageClient,
 	}, nil
-}
-
-type Secret struct {
-	Name       string `json:"name,omitempty"`
-	Ciphertext string `json:"ciphertext,omitempty"`
 }
