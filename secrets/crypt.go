@@ -20,7 +20,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	"github.com/pkg/errors"
+	"github.com/caigwatkin/go/errors"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 )
 
