@@ -35,14 +35,11 @@ type Client interface {
 }
 
 type client struct {
-	cloudkmsClient  *cloudkms.Service
-	cloudkmsKeyRing string
-	cloudkmsKey     string
-	cryptoKey       string
-	env             string
-	gcpProjectID    string
-	secrets         map[string][]byte
-	storageClient   *storage.Client
+	cloudkmsClient *cloudkms.Service
+	cryptoKey      string
+	env            string
+	secrets        map[string][]byte
+	storageClient  *storage.Client
 }
 
 // NewClient returns an implementation of the client interface that allows secret management
