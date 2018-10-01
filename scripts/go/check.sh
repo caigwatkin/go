@@ -26,5 +26,5 @@ revive -formatter stylish -config ${SCRIPT_DIR}/../../configs/revive.toml -exclu
 echo
 
 echo "Testing..."
-go test -mod vendor ${API}/...
+go test -mod vendor -covermode atomic ${API}/...
 echo

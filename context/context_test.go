@@ -66,6 +66,27 @@ func TestStartUp(t *testing.T) {
 	}
 }
 
+func TestShutDown(t *testing.T) {
+	result := ShutDown()
+	expectedCorrelationID := CorrelationIDShutDown
+	expectedTest := false
+
+	if CorrelationID(result) != expectedCorrelationID {
+		t.Error(go_testing.Errorf(go_testing.Error{
+			Unexpected: "CorrelationID(result)",
+			Expected:   expectedCorrelationID,
+			Result:     CorrelationID(result),
+		}))
+	}
+	if Test(result) != expectedTest {
+		t.Error(go_testing.Errorf(go_testing.Error{
+			Unexpected: "Test(result)",
+			Expected:   expectedTest,
+			Result:     Test(result),
+		}))
+	}
+}
+
 func TestNew(t *testing.T) {
 	background := context.Background()
 	pkgContextBackground := Background()

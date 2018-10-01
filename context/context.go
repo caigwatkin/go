@@ -32,19 +32,17 @@ const (
 
 // Background returns a new background context with background correlation ID enum
 func Background() context.Context {
-	ctx := WithCorrelationID(context.Background(), CorrelationIDBackground)
-	return WithTest(ctx, false)
+	return WithCorrelationID(context.Background(), CorrelationIDBackground)
 }
 
 // StartUp returns a new background context with start up correlation ID enum
 func StartUp() context.Context {
-	ctx := WithCorrelationID(context.Background(), CorrelationIDStartUp)
-	return WithTest(ctx, false)
+	return WithCorrelationID(context.Background(), CorrelationIDStartUp)
 }
 
+// ShutDown returns a new background context with shut down correlation ID enum
 func ShutDown() context.Context {
-	ctx := WithCorrelationID(context.Background(), CorrelationIDShutDown)
-	return WithTest(ctx, false)
+	return WithCorrelationID(context.Background(), CorrelationIDShutDown)
 }
 
 // New context with correlation ID of ctx with newly appended ctx, test value of ctx, and other defaults
