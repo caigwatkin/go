@@ -26,21 +26,21 @@ import (
 )
 
 type Client interface {
-	Decrypt(ciphertext string) (string, error)
+	Decrypt(secret Secret) ([]byte, error)
 	DownloadAndDecryptAndCache(ctx context.Context, bucket, dir string, required Required) error
-	Encrypt(plaintext string) (*Secret, error)
+	Encrypt(secret []byte) (*Secret, error)
 	FileName(domain, kind string) string
-	PlaintextFromCache(domain, kind string) (string, error)
+	Secret(domain, kind string) ([]byte, error)
 }
 
 type client struct {
-	cloudkmsClient        *cloudkms.Service
-	env                   string
-	gcpProjectID          string
-	keyRing               string
-	key                   string
-	plaintextSecretsCache map[string]string
-	storageClient         *storage.Client
+	cloudkmsClient *cloudkms.Service
+	env            string
+	gcpProjectID   string
+	keyRing        string
+	key            string
+	secrets        map[string][]byte
+	storageClient  *storage.Client
 }
 
 func NewClient(ctx context.Context, env, gcpProjectID, keyRing, key string) (Client, error) {
@@ -57,12 +57,12 @@ func NewClient(ctx context.Context, env, gcpProjectID, keyRing, key string) (Cli
 		return nil, errors.Wrap(err, "Failed initializing storage client")
 	}
 	return client{
-		cloudkmsClient:        cloudkmsClient,
-		env:                   env,
-		gcpProjectID:          gcpProjectID,
-		keyRing:               keyRing,
-		key:                   key,
-		plaintextSecretsCache: make(map[string]string),
-		storageClient:         storageClient,
+		cloudkmsClient: cloudkmsClient,
+		env:            env,
+		gcpProjectID:   gcpProjectID,
+		keyRing:        keyRing,
+		key:            key,
+		secrets:        make(map[string][]byte),
+		storageClient:  storageClient,
 	}, nil
 }
