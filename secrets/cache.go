@@ -50,7 +50,7 @@ func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir stri
 	b := c.storageClient.Bucket(bucket)
 	for domain, kinds := range required {
 		for _, kind := range kinds {
-			s, err := download(ctx, b, c.FileName(domain, kind), dir)
+			s, err := download(ctx, b, c.FileName(dir, domain, kind))
 			if err != nil {
 				return errors.Wrap(err, "Failed downloading secret from bucket")
 			}
@@ -64,12 +64,15 @@ func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir stri
 	return nil
 }
 
-func (c client) FileName(domain, kind string) string {
+func (c client) FileName(dir, domain, kind string) string {
+	if dir != "" {
+		return fmt.Sprintf("%s/%s_%s_cloudkms-%s.json", dir, domain, kind, c.env)
+	}
 	return fmt.Sprintf("%s_%s_cloudkms-%s.json", domain, kind, c.env)
 }
 
-func download(ctx context.Context, bucket *storage.BucketHandle, file, dir string) (*Secret, error) {
-	fileObject := bucket.Object(dir + file)
+func download(ctx context.Context, bucket *storage.BucketHandle, file string) (*Secret, error) {
+	fileObject := bucket.Object(file)
 	reader, err := fileObject.NewReader(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed opening file %q", file)

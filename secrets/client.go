@@ -29,21 +29,21 @@ type Client interface {
 	Decrypt(secret Secret) ([]byte, error)
 	DownloadAndDecryptAndCache(ctx context.Context, bucket, dir string, required Required) error
 	Encrypt(secret []byte) (*Secret, error)
-	FileName(domain, kind string) string
+	FileName(dir, domain, kind string) string
 	Secret(domain, kind string) ([]byte, error)
 }
 
 type client struct {
-	cloudkmsClient *cloudkms.Service
-	env            string
-	gcpProjectID   string
-	keyRing        string
-	key            string
-	secrets        map[string][]byte
-	storageClient  *storage.Client
+	cloudkmsClient  *cloudkms.Service
+	cloudkmsKeyRing string
+	cloudkmsKey     string
+	env             string
+	gcpProjectID    string
+	secrets         map[string][]byte
+	storageClient   *storage.Client
 }
 
-func NewClient(ctx context.Context, env, gcpProjectID, keyRing, key string) (Client, error) {
+func NewClient(ctx context.Context, env, gcpProjectID, cloudkmsKeyRing, cloudkmsKey string) (Client, error) {
 	googleClient, err := google.DefaultClient(ctx, cloudkms.CloudPlatformScope)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed initializing google client")
@@ -57,12 +57,12 @@ func NewClient(ctx context.Context, env, gcpProjectID, keyRing, key string) (Cli
 		return nil, errors.Wrap(err, "Failed initializing storage client")
 	}
 	return client{
-		cloudkmsClient: cloudkmsClient,
-		env:            env,
-		gcpProjectID:   gcpProjectID,
-		keyRing:        keyRing,
-		key:            key,
-		secrets:        make(map[string][]byte),
-		storageClient:  storageClient,
+		cloudkmsClient:  cloudkmsClient,
+		env:             env,
+		gcpProjectID:    gcpProjectID,
+		cloudkmsKeyRing: cloudkmsKeyRing,
+		cloudkmsKey:     cloudkmsKey,
+		secrets:         make(map[string][]byte),
+		storageClient:   storageClient,
 	}, nil
 }

@@ -27,6 +27,7 @@ import (
 const (
 	CorrelationIDBackground = "BACKGROUND"
 	CorrelationIDStartUp    = "START_UP"
+	CorrelationIDShutDown   = "SHUT_DOWN"
 )
 
 // Background returns a new background context with background correlation ID enum
@@ -38,6 +39,11 @@ func Background() context.Context {
 // StartUp returns a new background context with start up correlation ID enum
 func StartUp() context.Context {
 	ctx := WithCorrelationID(context.Background(), CorrelationIDStartUp)
+	return WithTest(ctx, false)
+}
+
+func ShutDown() context.Context {
+	ctx := WithCorrelationID(context.Background(), CorrelationIDShutDown)
 	return WithTest(ctx, false)
 }
 

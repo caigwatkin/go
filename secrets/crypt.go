@@ -52,5 +52,5 @@ func (c client) Decrypt(secret Secret) ([]byte, error) {
 }
 
 func (c client) cryptoKey() string {
-	return fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", c.gcpProjectID, c.keyRing, c.key)
+	return fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", c.gcpProjectID, c.cloudkmsKeyRing, c.cloudkmsKey)
 }
