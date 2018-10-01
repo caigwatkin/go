@@ -20,22 +20,24 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
-	"github.com/caigwatkin/go/errors"
+	go_errors "github.com/caigwatkin/go/errors"
 )
 
+// Secret data model, a subset of properties of a cloudkms secret
 type Secret struct {
 	Name       string `json:"name,omitempty"`
 	Ciphertext string `json:"ciphertext,omitempty"`
 }
 
+// SecretFromFile returns a secret from a file
 func SecretFromFile(pathToFile string) (*Secret, error) {
 	buf, err := ioutil.ReadFile(pathToFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed reading file")
+		return nil, go_errors.Wrap(err, "Failed reading file")
 	}
 	var s Secret
 	if err := json.Unmarshal(buf, &s); err != nil {
-		return nil, errors.Wrap(err, "Failed unmarshalling file buf into Secret")
+		return nil, go_errors.Wrap(err, "Failed unmarshalling file buf into Secret")
 	}
 	return &s, nil
 }
