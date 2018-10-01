@@ -33,6 +33,7 @@ import (
 type Client interface {
 	Debug(ctx context.Context, message string, fields ...Field)
 	Info(ctx context.Context, message string, fields ...Field)
+	Notice(ctx context.Context, message string, fields ...Field)
 	Warn(ctx context.Context, message string, fields ...Field)
 	Error(ctx context.Context, message string, fields ...Field)
 	Fatal(ctx context.Context, message string, fields ...Field)
@@ -69,6 +70,11 @@ func (c client) Debug(ctx context.Context, message string, fields ...Field) {
 // Info log at info level
 func (c client) Info(ctx context.Context, message string, fields ...Field) {
 	c.output(ctx, severityInfo, message, fields)
+}
+
+// Notice log at notice level
+func (c client) Notice(ctx context.Context, message string, fields ...Field) {
+	c.output(ctx, severityNotice, message, fields)
 }
 
 // Warn log at warn level
@@ -176,7 +182,7 @@ func FmtError(err error) Field {
 	if trace == friendly {
 		return Field(fmt.Sprintf("\"error\": %q", friendly))
 	}
-	return Field(fmt.Sprintf("\"error\": {\n\t\t\"friendly\": %q,\n\t\t\"trace\": %q\n\t}", friendly, trace))
+	return Field(fmt.Sprintf("\"error\": {\n\t\t\"friendly\": %q,\n\t\t\"trace\": %s\n\t}", friendly, trace))
 }
 
 // FmtFloat32 as name/value pair for logging
@@ -294,11 +300,12 @@ const (
 	yellow = 33
 	cyan   = 36
 
-	severityDebug = iota
-	severityInfo  = iota
-	severityWarn  = iota
-	severityError = iota
-	severityFatal = iota
+	severityDebug  = iota
+	severityInfo   = iota
+	severityNotice = iota // Flush, if applicable
+	severityWarn   = iota
+	severityError  = iota
+	severityFatal  = iota // Flush, if applicable
 )
 
 func (c client) output(ctx context.Context, severity int, message string, fields []Field) {
@@ -307,7 +314,7 @@ func (c client) output(ctx context.Context, severity int, message string, fields
 	switch severity {
 	case severityDebug:
 		c.loggerDebug.Println(message)
-	case severityInfo:
+	case severityInfo, severityNotice:
 		c.loggerInfo.Println(message)
 	case severityWarn:
 		c.loggerWarn.Println(message)

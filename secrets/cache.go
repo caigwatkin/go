@@ -23,40 +23,51 @@ import (
 	"fmt"
 
 	"cloud.google.com/go/storage"
-	"github.com/caigwatkin/go/errors"
+	go_errors "github.com/caigwatkin/go/errors"
 )
 
+// Secret returns an unencrypted secret from the cache if one exists, else errors
 func (c client) Secret(domain, kind string) ([]byte, error) {
 	if v, ok := c.secrets[cacheKey(domain, kind)]; ok {
 		return v, nil
 	}
-	return nil, errors.Errorf("No secret for domain %q and type %q", domain, kind)
+	return nil, go_errors.Errorf("No secret for domain %q and type %q", domain, kind)
 }
 
+// Required secrets map, where the key is the domain of the secret and the values are the types of secrets
+//
+// This should map to the naming scheme of the encrypted secret file, e.g.:
+//   - Secret file naming should be "secret_domain-secret_type-cloudkms_env.json"
+//   - If a required secret is from some api, it is a key, the domain is "some_api" and the type "key"
+//   - If the file was encrypted using cloudkms in a "dev" env, the file name is "some_api-key-cloudkms_dev.json"
 type Required map[string][]string
 
-func Combine(from, to Required) Required {
-	for k, v := range from {
-		if s, ok := to[k]; ok {
-			to[k] = append(s, v...)
-		} else {
-			to[k] = v
+// Combine two or more maps of required secrets into one
+func Combine(to Required, from ...Required) Required {
+	for _, v := range from {
+		for k, vv := range v {
+			if s, ok := to[k]; ok {
+				to[k] = append(s, vv...)
+			} else {
+				to[k] = vv
+			}
 		}
 	}
 	return to
 }
 
+// DownloadAndDecryptAndCache required secrets from a GCP cloud bucket
 func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir string, required Required) error {
 	b := c.storageClient.Bucket(bucket)
 	for domain, kinds := range required {
 		for _, kind := range kinds {
-			s, err := download(ctx, b, c.FileName(domain, kind), dir)
+			s, err := c.download(ctx, b, dir, domain, kind)
 			if err != nil {
-				return errors.Wrap(err, "Failed downloading secret from bucket")
+				return go_errors.Wrap(err, "Failed downloading secret from bucket")
 			}
 			plaintext, err := c.Decrypt(*s)
 			if err != nil {
-				return errors.Wrap(err, "Failed decrypting secret")
+				return go_errors.Wrap(err, "Failed decrypting secret")
 			}
 			c.secrets[cacheKey(domain, kind)] = plaintext
 		}
@@ -64,24 +75,26 @@ func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir stri
 	return nil
 }
 
-func (c client) FileName(domain, kind string) string {
-	return fmt.Sprintf("%s_%s_cloudkms-%s.json", domain, kind, c.env)
-}
-
-func download(ctx context.Context, bucket *storage.BucketHandle, file, dir string) (*Secret, error) {
-	fileObject := bucket.Object(dir + file)
+func (c client) download(ctx context.Context, bucket *storage.BucketHandle, dir, domain, kind string) (*Secret, error) {
+	var file string
+	if dir != "" {
+		file = fmt.Sprintf("%s/%s-%s-cloudkms_%s.json", dir, domain, kind, c.env)
+	} else {
+		file = fmt.Sprintf("%s-%s-cloudkms_%s.json", domain, kind, c.env)
+	}
+	fileObject := bucket.Object(file)
 	reader, err := fileObject.NewReader(ctx)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed opening file %q", file)
+		return nil, go_errors.Wrapf(err, "Failed opening file %q", file)
 	}
 	defer reader.Close()
 	buffer := new(bytes.Buffer)
 	if _, err := buffer.ReadFrom(reader); err != nil {
-		return nil, errors.Wrap(err, "Failed reading from reader")
+		return nil, go_errors.Wrap(err, "Failed reading from reader")
 	}
 	var s Secret
 	if err := json.Unmarshal(buffer.Bytes(), &s); err != nil {
-		return nil, errors.Wrap(err, "Failed unmarshalling buffer into Secret")
+		return nil, go_errors.Wrap(err, "Failed unmarshalling buffer into Secret")
 	}
 	return &s, nil
 }

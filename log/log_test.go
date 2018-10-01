@@ -621,14 +621,14 @@ func TestFmtError(t *testing.T) {
 
 		{
 			desc:     "no trace",
-			input:    errors.New("error"),
-			expected: "\"error\": \"error\"",
+			input:    errors.New("some error"),
+			expected: "\"error\": \"some error\"",
 		},
 
 		{
 			desc:     "trace",
 			input:    errWithTrace,
-			expected: fmt.Sprintf("\"error\": {\n\t\t\"friendly\": \"error\",\n\t\t\"trace\": %q\n\t}", trace),
+			expected: fmt.Sprintf("\"error\": {\n\t\t\"friendly\": \"error\",\n\t\t\"trace\": %s\n\t}", trace),
 		},
 	}
 
