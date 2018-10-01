@@ -37,9 +37,9 @@ func (c client) Secret(domain, kind string) ([]byte, error) {
 // Required secrets map, where the key is the domain of the secret and the values are the types of secrets
 //
 // This should map to the naming scheme of the encrypted secret file, e.g.:
-//   - Secret file naming should be "secret-domain_secret-type_cloudkms-env.json"
-//   - If a required secret is from some api, it is a key, the domain is "some-api" and the type "key"
-//   - If the file was encrypted using cloudkms in a "dev" env, the file name is "some-api_key_cloudkms-dev.json"
+//   - Secret file naming should be "secret_domain-secret_type-cloudkms_env.json"
+//   - If a required secret is from some api, it is a key, the domain is "some_api" and the type "key"
+//   - If the file was encrypted using cloudkms in a "dev" env, the file name is "some_api-key-cloudkms_dev.json"
 type Required map[string][]string
 
 // Combine two or more maps of required secrets into one
@@ -78,9 +78,9 @@ func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir stri
 func (c client) download(ctx context.Context, bucket *storage.BucketHandle, dir, domain, kind string) (*Secret, error) {
 	var file string
 	if dir != "" {
-		file = fmt.Sprintf("%s/%s_%s_cloudkms-%s.json", dir, domain, kind, c.env)
+		file = fmt.Sprintf("%s/%s-%s-cloudkms_%s.json", dir, domain, kind, c.env)
 	} else {
-		file = fmt.Sprintf("%s_%s_cloudkms-%s.json", domain, kind, c.env)
+		file = fmt.Sprintf("%s-%s-cloudkms_%s.json", domain, kind, c.env)
 	}
 	fileObject := bucket.Object(file)
 	reader, err := fileObject.NewReader(ctx)
