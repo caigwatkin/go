@@ -39,20 +39,22 @@ var (
 	key                string
 	keyRing            string
 	pathToFile         string
+	saveAsFileType     string
 	saveAsSecretType   string
 	saveAsSecretDomain string
 )
 
 func init() {
-	flag.StringVar(&ciphertext, "ciphertext", "", "Ciphertext to be decrypted. Required if no pathToFile given")
+	flag.StringVar(&ciphertext, "ciphertext", "", "Ciphertext to be decrypted. Required if no `pathToFile` given")
 	flag.BoolVar(&debug, "debug", true, "Debug mode on/off")
 	flag.StringVar(&env, "env", "dev", "Friendly environment name, used for file naming")
-	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be decrypted. Required if no ciphertext given")
+	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be decrypted. Required if no `ciphertext` given")
 	flag.StringVar(&gcpProjectID, "gcpProjectID", "", "GCP project ID which has cloudkms used for decryption")
 	flag.StringVar(&key, "key", "", "Cloudkms key to use")
 	flag.StringVar(&keyRing, "keyRing", "", "Cloudkms key ring to use")
-	flag.StringVar(&saveAsSecretDomain, "saveAsSecretDomain", "", "Optional secret domain to use as file name for saving, must be provided if saveAsSecretType provided")
-	flag.StringVar(&saveAsSecretType, "saveAsSecretType", "", "Optional secret type to use as file name for saving, must be provided if saveAsSecretDomain provided")
+	flag.StringVar(&saveAsFileType, "saveAsFileType", "json", "Optional file type to use as file name for saving")
+	flag.StringVar(&saveAsSecretDomain, "saveAsSecretDomain", "", "Optional secret domain to use as file name for saving, must be provided if `saveAsSecretType` provided")
+	flag.StringVar(&saveAsSecretType, "saveAsSecretType", "", "Optional secret type to use as file name for saving, must be provided if `saveAsSecretDomain` provided")
 	flag.Parse()
 }
 
@@ -108,24 +110,27 @@ func checkRequiredFlags() error {
 }
 
 func decrypt(ctx context.Context, logClient go_log.Client, secretsClient go_secrets.Client) {
+	secret := go_secrets.Secret{
+		Ciphertext: ciphertext,
+	}
 	if pathToFile != "" {
-		secret, err := go_secrets.SecretFromFile(pathToFile)
+		s, err := go_secrets.SecretFromFile(pathToFile)
 		if err != nil {
 			logClient.Fatal(ctx, "Failed reading secret from file", go_log.FmtError(err))
 		}
+		secret = *s
 		logClient.Info(ctx, "Loaded from file", go_log.FmtAny(secret, "secret"))
-		ciphertext = secret.Ciphertext
-		logClient.Info(ctx, "Loaded", go_log.FmtString(ciphertext, "ciphertext"))
 	}
 
-	plaintext, err := secretsClient.Decrypt(ciphertext)
+	logClient.Info(ctx, "Decrypting", go_log.FmtAny(secret, "secret"))
+	plaintext, err := secretsClient.Decrypt(secret)
 	if err != nil {
 		logClient.Fatal(ctx, "Failed decrypting ciphertext", go_log.FmtError(err))
 	}
-	logClient.Info(ctx, "Decrypted", go_log.FmtAny(plaintext, "plaintext"))
+	logClient.Info(ctx, "Decrypted", go_log.FmtBytes(plaintext, "plaintext"))
 
 	if saveAsSecretType != "" {
-		saveAs(ctx, logClient, []byte(plaintext))
+		saveAs(ctx, logClient, plaintext)
 	}
 }
 
@@ -134,7 +139,7 @@ func saveAs(ctx context.Context, logClient go_log.Client, plaintext []byte) {
 	if err != nil {
 		logClient.Fatal(ctx, "Failed to get directory of process", go_log.FmtError(err))
 	}
-	path := fmt.Sprintf("%s/%s_%s_plaintext.json", dir, saveAsSecretDomain, saveAsSecretType)
+	path := fmt.Sprintf("%s/%s_%s_plaintext.%s", dir, saveAsSecretDomain, saveAsSecretType, saveAsFileType)
 	if err := ioutil.WriteFile(path, plaintext, 0644); err != nil {
 		logClient.Fatal(ctx, "Failed to save file", go_log.FmtError(err))
 	}

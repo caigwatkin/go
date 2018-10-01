@@ -26,11 +26,11 @@ import (
 	"github.com/caigwatkin/go/errors"
 )
 
-func (c client) PlaintextFromCache(domain, kind string) (string, error) {
-	if v, ok := c.plaintextSecretsCache[cacheKey(domain, kind)]; ok {
+func (c client) Secret(domain, kind string) ([]byte, error) {
+	if v, ok := c.secrets[cacheKey(domain, kind)]; ok {
 		return v, nil
 	}
-	return "", errors.Errorf("No secret for domain %q and type %q", domain, kind)
+	return nil, errors.Errorf("No secret for domain %q and type %q", domain, kind)
 }
 
 type Required map[string][]string
@@ -54,11 +54,11 @@ func (c client) DownloadAndDecryptAndCache(ctx context.Context, bucket, dir stri
 			if err != nil {
 				return errors.Wrap(err, "Failed downloading secret from bucket")
 			}
-			plaintext, err := c.Decrypt(s)
+			plaintext, err := c.Decrypt(*s)
 			if err != nil {
 				return errors.Wrap(err, "Failed decrypting secret")
 			}
-			c.plaintextSecretsCache[cacheKey(domain, kind)] = plaintext
+			c.secrets[cacheKey(domain, kind)] = plaintext
 		}
 	}
 	return nil
@@ -68,22 +68,22 @@ func (c client) FileName(domain, kind string) string {
 	return fmt.Sprintf("%s_%s_cloudkms-%s.json", domain, kind, c.env)
 }
 
-func download(ctx context.Context, bucket *storage.BucketHandle, file, dir string) (string, error) {
+func download(ctx context.Context, bucket *storage.BucketHandle, file, dir string) (*Secret, error) {
 	fileObject := bucket.Object(dir + file)
 	reader, err := fileObject.NewReader(ctx)
 	if err != nil {
-		return "", errors.Wrapf(err, "Failed opening file %q", file)
+		return nil, errors.Wrapf(err, "Failed opening file %q", file)
 	}
 	defer reader.Close()
 	buffer := new(bytes.Buffer)
 	if _, err := buffer.ReadFrom(reader); err != nil {
-		return "", errors.Wrap(err, "Failed reading from reader")
+		return nil, errors.Wrap(err, "Failed reading from reader")
 	}
 	var s Secret
 	if err := json.Unmarshal(buffer.Bytes(), &s); err != nil {
-		return "", errors.Wrap(err, "Failed unmarshalling buffer into Secret")
+		return nil, errors.Wrap(err, "Failed unmarshalling buffer into Secret")
 	}
-	return s.Ciphertext, nil
+	return &s, nil
 }
 
 func cacheKey(domain, kind string) string {

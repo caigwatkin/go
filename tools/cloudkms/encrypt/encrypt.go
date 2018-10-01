@@ -39,7 +39,7 @@ var (
 	keyRing            string
 	key                string
 	pathToFile         string
-	plaintext          string
+	plaintext          []byte
 	saveAsSecretDomain string
 	saveAsSecretType   string
 )
@@ -47,14 +47,17 @@ var (
 func init() {
 	flag.BoolVar(&debug, "debug", true, "Debug mode on/off")
 	flag.StringVar(&env, "env", "dev", "Friendly environment name, used for file naming")
-	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be encrypted. Required if no plaintext given")
+	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be encrypted. Required if no `plaintext` given")
 	flag.StringVar(&gcpProjectID, "gcpProjectID", "", "GCP project ID which has cloudkms used for encryption")
 	flag.StringVar(&key, "key", "", "Cloudkms key to use")
 	flag.StringVar(&keyRing, "keyRing", "", "Cloudkms key ring to use")
-	flag.StringVar(&plaintext, "plaintext", "", "Plaintext to be encrypted. Required if no pathToFile given")
-	flag.StringVar(&saveAsSecretDomain, "saveAsSecretDomain", "", "Optional secret domain to use as file name for saving, must be provided if saveAsSecretType provided")
-	flag.StringVar(&saveAsSecretType, "saveAsSecretType", "", "Optional secret type to use as file name for saving, must be provided if saveAsSecretDomain provided")
+	var pt string
+	flag.StringVar(&pt, "plaintext", "", "Plaintext to be encrypted. Required if no `pathToFile` given")
+	flag.StringVar(&saveAsSecretDomain, "saveAsSecretDomain", "", "Optional secret domain to use as file name for saving, must be provided if `saveAsSecretType` provided")
+	flag.StringVar(&saveAsSecretType, "saveAsSecretType", "", "Optional secret type to use as file name for saving, must be provided if `saveAsSecretDomain` provided")
 	flag.Parse()
+
+	plaintext = []byte(pt)
 }
 
 func main() {
@@ -69,7 +72,7 @@ func main() {
 		go_log.FmtString(gcpProjectID, "gcpProjectID"),
 		go_log.FmtString(key, "key"),
 		go_log.FmtString(keyRing, "keyRing"),
-		go_log.FmtString(plaintext, "plaintext"),
+		go_log.FmtBytes(plaintext, "plaintext"),
 		go_log.FmtString(saveAsSecretDomain, "saveAsSecretDomain"),
 		go_log.FmtString(saveAsSecretType, "saveAsSecretType"),
 		go_log.FmtStrings(os.Environ(), "os.Environ()"),
@@ -92,7 +95,7 @@ func main() {
 }
 
 func checkRequiredFlags() error {
-	if (plaintext != "") == (pathToFile != "") {
+	if (len(plaintext) > 0) == (pathToFile != "") {
 		return go_errors.New("Either `plaintext` or `pathToFile` flag values must be provided, not both")
 	} else if (saveAsSecretDomain != "") != (saveAsSecretType != "") {
 		return go_errors.New("Both or neither `saveAsSecretDomain` and `saveAsSecretType` flag values must be provided")
@@ -114,10 +117,11 @@ func encrypt(ctx context.Context, logClient go_log.Client, secretsClient go_secr
 		if err != nil {
 			logClient.Fatal(ctx, "Failed reading file", go_log.FmtError(err))
 		}
-		plaintext = string(buf)
-		logClient.Info(ctx, "Loaded from file", go_log.FmtString(plaintext, "plaintext"))
+		plaintext = buf
+		logClient.Info(ctx, "Loaded from file", go_log.FmtBytes(plaintext, "plaintext"))
 	}
 
+	logClient.Info(ctx, "Encrypting", go_log.FmtBytes(plaintext, "plaintext"))
 	secret, err := secretsClient.Encrypt(plaintext)
 	if err != nil {
 		logClient.Fatal(ctx, "Failed encrypting plaintext", go_log.FmtError(err))
