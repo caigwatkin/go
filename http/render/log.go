@@ -20,8 +20,15 @@ import (
 	"context"
 	"net/http"
 
+	go_errors "github.com/caigwatkin/go/errors"
 	go_log "github.com/caigwatkin/go/log"
 )
+
+func logError(ctx context.Context, logClient go_log.Client, err error) {
+	logClient.Error(ctx, "Error to be rendered",
+		go_log.FmtError(err),
+	)
+}
 
 func logErrorMarshallingJSONBody(ctx context.Context, logClient go_log.Client, code int, headers map[string]string) {
 	logClient.Error(ctx, "Failed marshalling JSON for response body",
@@ -47,5 +54,11 @@ func logInfoResponse(ctx context.Context, logClient go_log.Client, code int, hea
 		go_log.FmtAny(headers, "headers"),
 		go_log.FmtInt(lenBody, "lenBody"),
 		go_log.FmtBytes(body, "body"),
+	)
+}
+
+func logStatus(ctx context.Context, logClient go_log.Client, status go_errors.Status) {
+	logClient.Info(ctx, "Status to be rendered",
+		go_log.FmtAny(status, "status"),
 	)
 }
