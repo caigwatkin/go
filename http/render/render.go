@@ -86,6 +86,7 @@ func Status(ctx context.Context, headersClient go_headers.Client, logClient go_l
 	})
 	logStatus(ctx, logClient, s)
 	body := s.Render()
+	body = append(body, byte('\n'))
 	w.WriteHeader(s.Code)
 	lenBody, err := w.Write(body)
 	if err != nil {
