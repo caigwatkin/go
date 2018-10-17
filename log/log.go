@@ -332,7 +332,7 @@ func runtimeLineAndFuncName(skip int) (int, string) {
 }
 
 func fmtLog(message, correlationID, funcName string, line int, fields []Field) string {
-	return fmt.Sprintf(" [%s] [%s] [%s:%d] %s\x1b[0m", message, correlationID, funcName, line, fmtFields(fields))
+	return fmt.Sprintf("[%s] [%s] [%s:%d] %s\x1b[0m", message, correlationID, funcName, line, fmtFields(fields))
 }
 
 func fmtFields(fields []Field) string {
