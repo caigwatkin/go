@@ -30,8 +30,9 @@ import (
 type Client interface {
 	RenderContentJSON(ctx context.Context, w http.ResponseWriter, body []byte)
 	RenderCreated(ctx context.Context, w http.ResponseWriter, location string)
-	RenderHealth(ctx context.Context, w http.ResponseWriter, serviceName string)
 	RenderErrorOrStatus(ctx context.Context, w http.ResponseWriter, err error)
+	RenderHealth(ctx context.Context, w http.ResponseWriter, serviceName string)
+	RenderNoContent(ctx context.Context, w http.ResponseWriter)
 	MiddlewareDefaults(r *chi.Mux, excludePathsForLogInfoRequests []string)
 }
 
@@ -61,14 +62,19 @@ func (c client) RenderCreated(ctx context.Context, w http.ResponseWriter, locati
 	go_render.Created(ctx, c.headersClient, c.logClient, w, location)
 }
 
+// RenderErrorOrStatus in response
+func (c client) RenderErrorOrStatus(ctx context.Context, w http.ResponseWriter, err error) {
+	go_render.ErrorOrStatus(ctx, c.headersClient, c.logClient, w, err)
+}
+
 // RenderHealth in response
 func (c client) RenderHealth(ctx context.Context, w http.ResponseWriter, serviceName string) {
 	go_render.Health(ctx, c.headersClient, c.logClient, w, serviceName)
 }
 
-// RenderErrorOrStatus in response
-func (c client) RenderErrorOrStatus(ctx context.Context, w http.ResponseWriter, err error) {
-	go_render.ErrorOrStatus(ctx, c.headersClient, c.logClient, w, err)
+// RenderNoContent in response
+func (c client) RenderNoContent(ctx context.Context, w http.ResponseWriter) {
+	go_render.NoContent(ctx, c.headersClient, c.logClient, w)
 }
 
 // MiddlewareDefaults for request handling
