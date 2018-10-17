@@ -79,6 +79,27 @@ func Health(ctx context.Context, headersClient go_headers.Client, logClient go_l
 	}
 }
 
+// ErrorOrStatus wraps Status if error is a Status, otherwise writes status code Internal Server Error
+func ErrorOrStatus(ctx context.Context, headersClient go_headers.Client, logClient go_log.Client, w http.ResponseWriter, err error) {
+	if v, ok := err.(go_errors.Status); ok {
+		Status(ctx, headersClient, logClient, w, v)
+		return
+	}
+	logError(ctx, logClient, err)
+	h := setHeadersInclDefaults(ctx, headersClient, w, nil)
+	code := http.StatusInternalServerError
+	w.WriteHeader(code)
+	logInfoResponse(ctx, logClient, code, h, 0, nil)
+}
+
+// NoContent writes status code No Content
+func NoContent(ctx context.Context, headersClient go_headers.Client, logClient go_log.Client, w http.ResponseWriter) {
+	headers := setHeadersInclDefaults(ctx, headersClient, w, nil)
+	code := http.StatusNoContent
+	w.WriteHeader(code)
+	logInfoResponse(ctx, logClient, code, headers, 0, nil)
+}
+
 // Status writes a go_errors.Status as JSON to the response writer with status code Status.Code
 func Status(ctx context.Context, headersClient go_headers.Client, logClient go_log.Client, w http.ResponseWriter, s go_errors.Status) {
 	h := setHeadersInclDefaults(ctx, headersClient, w, map[string]string{
@@ -94,19 +115,6 @@ func Status(ctx context.Context, headersClient go_headers.Client, logClient go_l
 		return
 	}
 	logInfoResponse(ctx, logClient, s.Code, h, lenBody, body)
-}
-
-// ErrorOrStatus wraps Status if error is a Status, otherwise writes status code Internal Server Error
-func ErrorOrStatus(ctx context.Context, headersClient go_headers.Client, logClient go_log.Client, w http.ResponseWriter, err error) {
-	if v, ok := err.(go_errors.Status); ok {
-		Status(ctx, headersClient, logClient, w, v)
-		return
-	}
-	logError(ctx, logClient, err)
-	h := setHeadersInclDefaults(ctx, headersClient, w, nil)
-	code := http.StatusInternalServerError
-	w.WriteHeader(code)
-	logInfoResponse(ctx, logClient, code, h, 0, nil)
 }
 
 func setHeadersInclDefaults(ctx context.Context, headersClient go_headers.Client, w http.ResponseWriter, headers map[string]string) map[string]string {
