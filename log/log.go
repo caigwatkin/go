@@ -52,7 +52,7 @@ type client struct {
 func NewClient(enableDebug bool) Client {
 	return client{
 		debug:       enableDebug,
-		loggerDebug: log.New(os.Stdout, fmt.Sprintf("\x1b[%dmDEBUG ", green), log.Ldate|log.Ltime|log.Lmicroseconds),
+		loggerDebug: log.New(os.Stdout, fmt.Sprintf("\x1b[%dmDEBUG ", green), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
 		loggerInfo:  log.New(os.Stdout, fmt.Sprintf("\x1b[%dmINFO  ", cyan), log.Ldate|log.Ltime|log.Lmicroseconds),
 		loggerWarn:  log.New(os.Stderr, fmt.Sprintf("\x1b[%dmWARN  ", yellow), log.Ldate|log.Ltime|log.Lmicroseconds),
 		loggerError: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmERROR ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
@@ -310,7 +310,7 @@ const (
 
 func (c client) output(ctx context.Context, severity int, message string, fields []Field) {
 	line, funcName := runtimeLineAndFuncName(2)
-	message = fmtLog(go_context.CorrelationID(ctx), message, funcName, line, fields)
+	message = fmtLog(message, go_context.CorrelationID(ctx), funcName, line, fields)
 	switch severity {
 	case severityDebug:
 		c.loggerDebug.Println(message)
@@ -332,7 +332,7 @@ func runtimeLineAndFuncName(skip int) (int, string) {
 }
 
 func fmtLog(message, correlationID, funcName string, line int, fields []Field) string {
-	return fmt.Sprintf("%s %s %s:%d %s\x1b[0m", message, correlationID, funcName, line, fmtFields(fields))
+	return fmt.Sprintf("[%s] [%s] [%s:%d] %s\x1b[0m", message, correlationID, funcName, line, fmtFields(fields))
 }
 
 func fmtFields(fields []Field) string {

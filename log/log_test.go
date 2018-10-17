@@ -1714,7 +1714,7 @@ func TestFmtLog(t *testing.T) {
 					Field("field"),
 				},
 			},
-			expected: "message correlationID funcName:0 {\n\tfield\n}\x1b[0m",
+			expected: "[message] [correlationID] [funcName:0] {\n\tfield\n}\x1b[0m",
 		},
 
 		{
@@ -1729,7 +1729,7 @@ func TestFmtLog(t *testing.T) {
 					Field("also field"),
 				},
 			},
-			expected: "message correlationID funcName:0 {\n\tfield,\n\talso field\n}\x1b[0m",
+			expected: "[message] [correlationID] [funcName:0] {\n\tfield,\n\talso field\n}\x1b[0m",
 		},
 
 		{
@@ -1741,7 +1741,7 @@ func TestFmtLog(t *testing.T) {
 				line:          0,
 				fields:        []Field{},
 			},
-			expected: "message correlationID funcName:0 \x1b[0m",
+			expected: "[message] [correlationID] [funcName:0] \x1b[0m",
 		},
 
 		{
@@ -1753,7 +1753,7 @@ func TestFmtLog(t *testing.T) {
 				line:          0,
 				fields:        nil,
 			},
-			expected: "message correlationID funcName:0 \x1b[0m",
+			expected: "[message] [correlationID] [funcName:0] \x1b[0m",
 		},
 	}
 
