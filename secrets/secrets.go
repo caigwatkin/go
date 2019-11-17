@@ -26,7 +26,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	go_errors "github.com/caigwatkin/go/errors"
-	"golang.org/x/oauth2/google"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 )
 
@@ -48,24 +47,20 @@ type Config struct {
 
 // NewClient returns an implementation of the client interface that allows secret management
 func NewClient(ctx context.Context, config Config) (Client, error) {
-	googleClient, err := google.DefaultClient(ctx, cloudkms.CloudPlatformScope)
+	cloudkmsService, err := cloudkms.NewService(ctx)
 	if err != nil {
-		return nil, go_errors.Wrap(err, "Failed initializing google client")
-	}
-	cloudkmsClient, err := cloudkms.New(googleClient)
-	if err != nil {
-		return nil, go_errors.Wrap(err, "Failed initializing cloudkms client")
+		return nil, go_errors.Wrap(err, "Failed initializing cloudkms service")
 	}
 	storageClient, err := storage.NewClient(ctx)
 	if err != nil {
 		return nil, go_errors.Wrap(err, "Failed initializing storage client")
 	}
 	return client{
-		cloudkmsClient: cloudkmsClient,
-		env:            config.Env,
-		cryptoKey:      fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", config.GcpProjectId, config.CloudkmsKeyRing, config.CloudkmsKey),
-		secrets:        make(map[string][]byte),
-		storageClient:  storageClient,
+		cloudkmsService: cloudkmsService,
+		env:             config.Env,
+		cryptoKey:       fmt.Sprintf("projects/%s/locations/global/keyRings/%s/cryptoKeys/%s", config.GcpProjectId, config.CloudkmsKeyRing, config.CloudkmsKey),
+		secrets:         make(map[string][]byte),
+		storageClient:   storageClient,
 	}, nil
 }
 
@@ -110,11 +105,11 @@ func reduceRequiredTypes(reduced, new []string) []string {
 }
 
 type client struct {
-	cloudkmsClient *cloudkms.Service
-	cryptoKey      string
-	env            string
-	secrets        map[string][]byte
-	storageClient  *storage.Client
+	cloudkmsService *cloudkms.Service
+	cryptoKey       string
+	env             string
+	secrets         map[string][]byte
+	storageClient   *storage.Client
 }
 
 // Secret data model, a subset of properties of a cloudkms secret
@@ -125,7 +120,7 @@ type Secret struct {
 
 // Encrypt plaintext bytes into a secret
 func (c client) Encrypt(plaintext []byte) (*Secret, error) {
-	r, err := c.cloudkmsClient.Projects.Locations.KeyRings.CryptoKeys.Encrypt(c.cryptoKey, &cloudkms.EncryptRequest{
+	r, err := c.cloudkmsService.Projects.Locations.KeyRings.CryptoKeys.Encrypt(c.cryptoKey, &cloudkms.EncryptRequest{
 		Plaintext: base64.StdEncoding.EncodeToString(plaintext),
 	}).Do()
 	if err != nil {
@@ -139,7 +134,7 @@ func (c client) Encrypt(plaintext []byte) (*Secret, error) {
 
 // Decrypt a secret into plaintext bytes
 func (c client) Decrypt(secret Secret) ([]byte, error) {
-	resp, err := c.cloudkmsClient.Projects.Locations.KeyRings.CryptoKeys.Decrypt(c.cryptoKey, &cloudkms.DecryptRequest{
+	resp, err := c.cloudkmsService.Projects.Locations.KeyRings.CryptoKeys.Decrypt(c.cryptoKey, &cloudkms.DecryptRequest{
 		Ciphertext: secret.Ciphertext,
 	}).Do()
 	if err != nil {
