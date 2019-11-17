@@ -2,7 +2,7 @@
 
 [![license](http://img.shields.io/badge/license-Apache%20v2-orange.svg)](https://raw.githubusercontent.com/caigwatkin/go/master/LICENSE)
 [![CircleCI](https://circleci.com/gh/caigwatkin/go/tree/master.svg?style=svg&circle-token=7d2fa801d897842c148936fa7e350d467633ed3f)](https://circleci.com/gh/caigwatkin/go/tree/master)
-[![codecov](https://codecov.io/gh/caigwatkin/go/branch/master/graph/badge.svg)](https://codecov.io/gh/caigwatkin/go)
+[![codecov](https://codecov.io/gh/caigwatkin/go/branch/master/graph/badge.svg?token=5WMVA6hXS7)](https://codecov.io/gh/caigwatkin/go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/caigwatkin/go)](https://goreportcard.com/report/github.com/caigwatkin/go)
 
 Golang package library for APIs
