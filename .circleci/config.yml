@@ -12,27 +12,17 @@ jobs:
       - checkout
 
       - run:
-          name: Vetting
+          name: Vet and lint
 
           command: |
             go vet -mod=vendor $LIB/...
-
-      - run:
-          name: Linting
-
-          command: |
             go run github.com/mgechev/revive -formatter=stylish -config=./configs/revive.toml -exclude=./vendor/... ./...
 
       - run:
-          name: Linting
+          name: Run unit tests
 
           command: |
             go test -mod=vendor -coverprofile=coverage.txt -covermode=atomic $LIB/...
-
-      - run:
-          name: Linting
-
-          command: |
             bash <(curl -s https://codecov.io/bash)
 
 workflows:
