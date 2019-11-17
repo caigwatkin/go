@@ -39,3 +39,4 @@ warningCode = 0
   severity = "warn"
 [rule.var-declaration]
 [rule.var-naming]
+  arguments = [["ID"]]

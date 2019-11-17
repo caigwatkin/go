@@ -119,7 +119,7 @@ func Status(ctx context.Context, headersClient go_headers.Client, logClient go_l
 
 func setHeadersInclDefaults(ctx context.Context, headersClient go_headers.Client, w http.ResponseWriter, headers map[string]string) map[string]string {
 	h := map[string]string{
-		headersClient.CorrelationIDKey(): go_context.CorrelationID(ctx),
+		headersClient.CorrelationIdKey(): go_context.CorrelationId(ctx),
 	}
 	if go_context.Test(ctx) {
 		h[headersClient.TestKey()] = go_headers.TestValDefault

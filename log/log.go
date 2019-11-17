@@ -39,15 +39,6 @@ type Client interface {
 	Fatal(ctx context.Context, message string, fields ...Field)
 }
 
-type client struct {
-	debug       bool
-	loggerDebug *log.Logger
-	loggerInfo  *log.Logger
-	loggerWarn  *log.Logger
-	loggerError *log.Logger
-	loggerFatal *log.Logger
-}
-
 // NewClient for logging
 func NewClient(enableDebug bool) Client {
 	return client{
@@ -58,6 +49,15 @@ func NewClient(enableDebug bool) Client {
 		loggerError: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmERROR ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
 		loggerFatal: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmFATAL ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
 	}
+}
+
+type client struct {
+	debug       bool
+	loggerDebug *log.Logger
+	loggerInfo  *log.Logger
+	loggerWarn  *log.Logger
+	loggerError *log.Logger
+	loggerFatal *log.Logger
 }
 
 // Debug log at debug level
@@ -310,7 +310,7 @@ const (
 
 func (c client) output(ctx context.Context, severity int, message string, fields []Field) {
 	line, funcName := runtimeLineAndFuncName(2)
-	message = fmtLog(message, go_context.CorrelationID(ctx), funcName, line, fields)
+	message = fmtLog(message, go_context.CorrelationId(ctx), funcName, line, fields)
 	switch severity {
 	case severityDebug:
 		c.loggerDebug.Println(message)
@@ -331,8 +331,8 @@ func runtimeLineAndFuncName(skip int) (int, string) {
 	return line, funcName
 }
 
-func fmtLog(message, correlationID, funcName string, line int, fields []Field) string {
-	return fmt.Sprintf("[%s] [%s] [%s:%d] %s\x1b[0m", message, correlationID, funcName, line, fmtFields(fields))
+func fmtLog(message, correlationId, funcName string, line int, fields []Field) string {
+	return fmt.Sprintf("[%s] [%s] [%s:%d] %s\x1b[0m", message, correlationId, funcName, line, fmtFields(fields))
 }
 
 func fmtFields(fields []Field) string {
