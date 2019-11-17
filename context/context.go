@@ -25,31 +25,31 @@ import (
 
 // Correlation ID enums
 const (
-	CorrelationIDBackground = "BACKGROUND"
-	CorrelationIDStartUp    = "START_UP"
-	CorrelationIDShutDown   = "SHUT_DOWN"
+	CorrelationIdBackground = "BACKGROUND"
+	CorrelationIdStartUp    = "START_UP"
+	CorrelationIdShutDown   = "SHUT_DOWN"
 )
 
 // Background returns a new background context with background correlation ID enum
 func Background() context.Context {
-	return WithCorrelationID(context.Background(), CorrelationIDBackground)
+	return WithCorrelationId(context.Background(), CorrelationIdBackground)
 }
 
 // StartUp returns a new background context with start up correlation ID enum
 func StartUp() context.Context {
-	return WithCorrelationID(context.Background(), CorrelationIDStartUp)
+	return WithCorrelationId(context.Background(), CorrelationIdStartUp)
 }
 
 // ShutDown returns a new background context with shut down correlation ID enum
 func ShutDown() context.Context {
-	return WithCorrelationID(context.Background(), CorrelationIDShutDown)
+	return WithCorrelationId(context.Background(), CorrelationIdShutDown)
 }
 
 // New context with correlation ID of ctx with newly appended ctx, test value of ctx, and other defaults
 func New(ctx context.Context) context.Context {
-	c := WithCorrelationID(context.Background(), uuid.New().String())
+	c := WithCorrelationId(context.Background(), uuid.New().String())
 	if ctx != nil {
-		c = WithCorrelationIDAppend(c, CorrelationID(ctx))
+		c = WithCorrelationIdAppend(c, CorrelationId(ctx))
 		c = WithTest(c, Test(ctx))
 	}
 	return c
@@ -58,29 +58,29 @@ func New(ctx context.Context) context.Context {
 type key int
 
 const (
-	keyCorrelationID key = iota
+	keyCorrelationId key = iota
 	keyTest          key = iota
 )
 
-// CorrelationID returns correlation ID value of ctx
-func CorrelationID(ctx context.Context) string {
-	if v, ok := ctx.Value(keyCorrelationID).(string); ok {
+// CorrelationId returns correlation ID value of ctx
+func CorrelationId(ctx context.Context) string {
+	if v, ok := ctx.Value(keyCorrelationId).(string); ok {
 		return v
 	}
 	return ""
 }
 
-// WithCorrelationID returns a new context with correlation ID value
-func WithCorrelationID(ctx context.Context, correlationID string) context.Context {
-	return context.WithValue(ctx, keyCorrelationID, correlationID)
+// WithCorrelationId returns a new context with correlation ID value
+func WithCorrelationId(ctx context.Context, correlationId string) context.Context {
+	return context.WithValue(ctx, keyCorrelationId, correlationId)
 }
 
-// WithCorrelationIDAppend returns a new context with correlation ID value appended to existing correlation ID value if one exists
-func WithCorrelationIDAppend(ctx context.Context, correlationID string) context.Context {
-	if cID := CorrelationID(ctx); cID != CorrelationIDBackground {
-		correlationID = fmt.Sprintf("%s,%s", cID, correlationID)
+// WithCorrelationIdAppend returns a new context with correlation ID value appended to existing correlation ID value if one exists
+func WithCorrelationIdAppend(ctx context.Context, correlationId string) context.Context {
+	if cId := CorrelationId(ctx); cId != CorrelationIdBackground {
+		correlationId = fmt.Sprintf("%s,%s", cId, correlationId)
 	}
-	return WithCorrelationID(ctx, correlationID)
+	return WithCorrelationId(ctx, correlationId)
 }
 
 // Test returns test value of ctx

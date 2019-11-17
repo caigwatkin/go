@@ -44,9 +44,9 @@ func Defaults(router *chi.Mux, headersClient go_headers.Client, logClient go_log
 func populateContext(headersClient go_headers.Client) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := go_context.WithCorrelationID(r.Context(), uuid.New().String())
-			if v, ok := r.Header[headersClient.CorrelationIDKey()]; ok {
-				ctx = go_context.WithCorrelationIDAppend(ctx, strings.Join(v, ","))
+			ctx := go_context.WithCorrelationId(r.Context(), uuid.New().String())
+			if v, ok := r.Header[headersClient.CorrelationIdKey()]; ok {
+				ctx = go_context.WithCorrelationIdAppend(ctx, strings.Join(v, ","))
 			}
 			var t bool
 			if v, ok := r.Header[headersClient.TestKey()]; ok {

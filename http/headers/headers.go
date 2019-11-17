@@ -22,18 +22,18 @@ import (
 
 // Client interface
 type Client interface {
-	CorrelationIDKey() string
+	CorrelationIdKey() string
 	TestKey() string
 }
 
 type client struct {
-	correlationIDKey string
+	correlationIdKey string
 	testKey          string
 }
 
 const (
-	correlationIDKeyDefault = "X-Correlation-Id"
-	correlationIDKeyFormat  = "X-%s-Correlation-Id"
+	correlationIdKeyDefault = "X-Correlation-Id"
+	correlationIdKeyFormat  = "X-%s-Correlation-Id"
 
 	testKeyDefault = "X-Test"
 	testKeyFormat  = "X-%s-Test"
@@ -46,22 +46,22 @@ const (
 // Use an empty string to use default keys
 func NewClient(serviceName string) Client {
 	var c client
-	c.setCorrelationIDKey(serviceName)
+	c.setCorrelationIdKey(serviceName)
 	c.setTestKey(serviceName)
 	return &c
 }
 
-// CorrelationIDKey returns the correlation ID header key
-func (c client) CorrelationIDKey() string {
-	return c.correlationIDKey
+// CorrelationIdKey returns the correlation ID header key
+func (c client) CorrelationIdKey() string {
+	return c.correlationIdKey
 }
 
-func (c *client) setCorrelationIDKey(serviceName string) {
+func (c *client) setCorrelationIdKey(serviceName string) {
 	if serviceName == "" {
-		c.correlationIDKey = correlationIDKeyDefault
+		c.correlationIdKey = correlationIdKeyDefault
 		return
 	}
-	c.correlationIDKey = fmt.Sprintf(correlationIDKeyFormat, serviceName)
+	c.correlationIdKey = fmt.Sprintf(correlationIdKeyFormat, serviceName)
 }
 
 // TestKey returns the test header key

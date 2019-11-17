@@ -26,14 +26,14 @@ import (
 
 func TestBackground(t *testing.T) {
 	result := Background()
-	expectedCorrelationID := CorrelationIDBackground
+	expectedCorrelationId := CorrelationIdBackground
 	expectedTest := false
 
-	if CorrelationID(result) != expectedCorrelationID {
+	if CorrelationId(result) != expectedCorrelationId {
 		t.Error(go_testing.Errorf(go_testing.Error{
-			Unexpected: "CorrelationID(result)",
-			Expected:   expectedCorrelationID,
-			Result:     CorrelationID(result),
+			Unexpected: "CorrelationId(result)",
+			Expected:   expectedCorrelationId,
+			Result:     CorrelationId(result),
 		}))
 	}
 	if Test(result) != expectedTest {
@@ -47,14 +47,14 @@ func TestBackground(t *testing.T) {
 
 func TestStartUp(t *testing.T) {
 	result := StartUp()
-	expectedCorrelationID := CorrelationIDStartUp
+	expectedCorrelationId := CorrelationIdStartUp
 	expectedTest := false
 
-	if CorrelationID(result) != expectedCorrelationID {
+	if CorrelationId(result) != expectedCorrelationId {
 		t.Error(go_testing.Errorf(go_testing.Error{
-			Unexpected: "CorrelationID(result)",
-			Expected:   expectedCorrelationID,
-			Result:     CorrelationID(result),
+			Unexpected: "CorrelationId(result)",
+			Expected:   expectedCorrelationId,
+			Result:     CorrelationId(result),
 		}))
 	}
 	if Test(result) != expectedTest {
@@ -68,14 +68,14 @@ func TestStartUp(t *testing.T) {
 
 func TestShutDown(t *testing.T) {
 	result := ShutDown()
-	expectedCorrelationID := CorrelationIDShutDown
+	expectedCorrelationId := CorrelationIdShutDown
 	expectedTest := false
 
-	if CorrelationID(result) != expectedCorrelationID {
+	if CorrelationId(result) != expectedCorrelationId {
 		t.Error(go_testing.Errorf(go_testing.Error{
-			Unexpected: "CorrelationID(result)",
-			Expected:   expectedCorrelationID,
-			Result:     CorrelationID(result),
+			Unexpected: "CorrelationId(result)",
+			Expected:   expectedCorrelationId,
+			Result:     CorrelationId(result),
 		}))
 	}
 	if Test(result) != expectedTest {
@@ -91,9 +91,9 @@ func TestNew(t *testing.T) {
 	background := context.Background()
 	pkgContextBackground := Background()
 	pkgContextStartUp := StartUp()
-	customized := context.WithValue(context.WithValue(context.Background(), keyCorrelationID, "customized"), keyTest, true)
+	customized := context.WithValue(context.WithValue(context.Background(), keyCorrelationId, "customized"), keyTest, true)
 	type expected struct {
-		correlationIDSuffix string
+		correlationIdSuffix string
 		test                bool
 	}
 	var data = []struct {
@@ -105,7 +105,7 @@ func TestNew(t *testing.T) {
 			desc:  "background",
 			input: background,
 			expected: expected{
-				correlationIDSuffix: CorrelationID(background),
+				correlationIdSuffix: CorrelationId(background),
 				test:                Test(background),
 			},
 		},
@@ -114,7 +114,7 @@ func TestNew(t *testing.T) {
 			desc:  "go_context background",
 			input: pkgContextBackground,
 			expected: expected{
-				correlationIDSuffix: CorrelationID(pkgContextBackground),
+				correlationIdSuffix: CorrelationId(pkgContextBackground),
 				test:                Test(pkgContextBackground),
 			},
 		},
@@ -123,7 +123,7 @@ func TestNew(t *testing.T) {
 			desc:  "go_context start up",
 			input: pkgContextStartUp,
 			expected: expected{
-				correlationIDSuffix: CorrelationID(pkgContextStartUp),
+				correlationIdSuffix: CorrelationId(pkgContextStartUp),
 				test:                Test(pkgContextStartUp),
 			},
 		},
@@ -132,7 +132,7 @@ func TestNew(t *testing.T) {
 			desc:  "customized",
 			input: customized,
 			expected: expected{
-				correlationIDSuffix: "customized",
+				correlationIdSuffix: "customized",
 				test:                true,
 			},
 		},
@@ -141,7 +141,7 @@ func TestNew(t *testing.T) {
 			desc:  "nil",
 			input: nil,
 			expected: expected{
-				correlationIDSuffix: "",
+				correlationIdSuffix: "",
 				test:                false,
 			},
 		},
@@ -150,22 +150,22 @@ func TestNew(t *testing.T) {
 	for i, d := range data {
 		result := New(d.input)
 
-		if CorrelationID(result) == "" {
+		if CorrelationId(result) == "" {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "CorrelationID(result)",
+				Unexpected: "CorrelationId(result)",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   "NOT EMPTY STRING",
-				Result:     CorrelationID(result),
+				Result:     CorrelationId(result),
 			}))
 		}
-		if !strings.HasSuffix(CorrelationID(result), d.expected.correlationIDSuffix) {
+		if !strings.HasSuffix(CorrelationId(result), d.expected.correlationIdSuffix) {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "CorrelationID(result) suffix",
+				Unexpected: "CorrelationId(result) suffix",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected.correlationIDSuffix,
-				Result:     CorrelationID(result),
+				Expected:   d.expected.correlationIdSuffix,
+				Result:     CorrelationId(result),
 			}))
 		}
 		if Test(result) != d.expected.test {
@@ -180,27 +180,27 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestCorrelationID(t *testing.T) {
+func TestCorrelationId(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    context.Context
 		expected string
 	}{
 		{
-			desc:     "correlationID",
-			input:    context.WithValue(context.Background(), keyCorrelationID, "correlationID"),
-			expected: "correlationID",
+			desc:     "correlationId",
+			input:    context.WithValue(context.Background(), keyCorrelationId, "correlationId"),
+			expected: "correlationId",
 		},
 
 		{
 			desc:     "empty",
-			input:    context.WithValue(context.Background(), keyCorrelationID, ""),
+			input:    context.WithValue(context.Background(), keyCorrelationId, ""),
 			expected: "",
 		},
 
 		{
 			desc:     "unexpected type",
-			input:    context.WithValue(context.Background(), keyCorrelationID, true),
+			input:    context.WithValue(context.Background(), keyCorrelationId, true),
 			expected: "",
 		},
 
@@ -212,7 +212,7 @@ func TestCorrelationID(t *testing.T) {
 	}
 
 	for i, d := range data {
-		result := CorrelationID(d.input)
+		result := CorrelationId(d.input)
 
 		if result != d.expected {
 			t.Error(go_testing.Errorf(go_testing.Error{
@@ -226,10 +226,10 @@ func TestCorrelationID(t *testing.T) {
 	}
 }
 
-func TestWithCorrelationID(t *testing.T) {
+func TestWithCorrelationId(t *testing.T) {
 	type input struct {
 		ctx           context.Context
-		correlationID string
+		correlationId string
 	}
 	var data = []struct {
 		desc string
@@ -240,27 +240,27 @@ func TestWithCorrelationID(t *testing.T) {
 			desc: "none",
 			input: input{
 				ctx:           context.Background(),
-				correlationID: "correlationID",
+				correlationId: "correlationId",
 			},
-			expected: "correlationID",
+			expected: "correlationId",
 		},
 
 		{
 			desc: "override",
 			input: input{
-				ctx:           context.WithValue(context.Background(), keyCorrelationID, "xxxxx"),
-				correlationID: "correlationID",
+				ctx:           context.WithValue(context.Background(), keyCorrelationId, "xxxxx"),
+				correlationId: "correlationId",
 			},
-			expected: "correlationID",
+			expected: "correlationId",
 		},
 	}
 
 	for i, d := range data {
-		result := WithCorrelationID(d.input.ctx, d.input.correlationID)
+		result := WithCorrelationId(d.input.ctx, d.input.correlationId)
 
-		if v, ok := result.Value(keyCorrelationID).(string); !ok {
+		if v, ok := result.Value(keyCorrelationId).(string); !ok {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Value(keyCorrelationID).(string) ok",
+				Unexpected: "result.Value(keyCorrelationId).(string) ok",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   "exists",
@@ -269,7 +269,7 @@ func TestWithCorrelationID(t *testing.T) {
 
 		} else if v != d.expected {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Value(keyCorrelationID).(string)",
+				Unexpected: "result.Value(keyCorrelationId).(string)",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   d.expected,

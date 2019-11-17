@@ -1693,7 +1693,7 @@ func TestFmtFields(t *testing.T) {
 func TestFmtLog(t *testing.T) {
 	type input struct {
 		message       string
-		correlationID string
+		correlationId string
 		funcName      string
 		line          int
 		fields        []Field
@@ -1707,21 +1707,21 @@ func TestFmtLog(t *testing.T) {
 			desc: "single",
 			input: input{
 				message:       "message",
-				correlationID: "correlationID",
+				correlationId: "correlationId",
 				funcName:      "funcName",
 				line:          0,
 				fields: []Field{
 					Field("field"),
 				},
 			},
-			expected: "[message] [correlationID] [funcName:0] {\n\tfield\n}\x1b[0m",
+			expected: "[message] [correlationId] [funcName:0] {\n\tfield\n}\x1b[0m",
 		},
 
 		{
 			desc: "multi",
 			input: input{
 				message:       "message",
-				correlationID: "correlationID",
+				correlationId: "correlationId",
 				funcName:      "funcName",
 				line:          0,
 				fields: []Field{
@@ -1729,36 +1729,36 @@ func TestFmtLog(t *testing.T) {
 					Field("also field"),
 				},
 			},
-			expected: "[message] [correlationID] [funcName:0] {\n\tfield,\n\talso field\n}\x1b[0m",
+			expected: "[message] [correlationId] [funcName:0] {\n\tfield,\n\talso field\n}\x1b[0m",
 		},
 
 		{
 			desc: "empty",
 			input: input{
 				message:       "message",
-				correlationID: "correlationID",
+				correlationId: "correlationId",
 				funcName:      "funcName",
 				line:          0,
 				fields:        []Field{},
 			},
-			expected: "[message] [correlationID] [funcName:0] \x1b[0m",
+			expected: "[message] [correlationId] [funcName:0] \x1b[0m",
 		},
 
 		{
 			desc: "nil",
 			input: input{
 				message:       "message",
-				correlationID: "correlationID",
+				correlationId: "correlationId",
 				funcName:      "funcName",
 				line:          0,
 				fields:        nil,
 			},
-			expected: "[message] [correlationID] [funcName:0] \x1b[0m",
+			expected: "[message] [correlationId] [funcName:0] \x1b[0m",
 		},
 	}
 
 	for i, d := range data {
-		result := fmtLog(d.input.message, d.input.correlationID, d.input.funcName, d.input.line, d.input.fields)
+		result := fmtLog(d.input.message, d.input.correlationId, d.input.funcName, d.input.line, d.input.fields)
 
 		if result != d.expected {
 			t.Error(go_testing.Errorf(go_testing.Error{
