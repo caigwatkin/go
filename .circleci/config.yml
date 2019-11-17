@@ -1,0 +1,42 @@
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.13
+
+    environment: # environment variables for the build itself
+      CODECOV_TOKEN: 3179f100-4719-452a-a92f-a95ca10c0782
+      LIB: github.com/caigwatkin/go
+
+    steps:
+      - checkout
+
+      - run:
+          name: Vetting
+
+          command: |
+            go vet -mod=vendor $LIB/...
+
+      - run:
+          name: Linting
+
+          command: |
+            go run github.com/mgechev/revive -formatter=stylish -config=./configs/revive.toml -exclude=./vendor/... ./...
+
+      - run:
+          name: Linting
+
+          command: |
+            go test -mod=vendor -coverprofile=coverage.txt -covermode=atomic $LIB/...
+
+      - run:
+          name: Linting
+
+          command: |
+            bash <(curl -s https://codecov.io/bash)
+
+workflows:
+  version: 2
+  build-workflow:
+    jobs:
+      - build
