@@ -33,11 +33,11 @@ import (
 )
 
 var (
+	cloudkmsKeyRing    string
+	cloudkmsKey        string
 	debug              bool
 	env                string
-	gcpProjectID       string
-	keyRing            string
-	key                string
+	gcpProjectId       string
 	pathToFile         string
 	plaintext          []byte
 	saveAsSecretDomain string
@@ -45,12 +45,12 @@ var (
 )
 
 func init() {
+	flag.StringVar(&cloudkmsKey, "cloudkmsKey", "", "Cloud KMS key to use")
+	flag.StringVar(&cloudkmsKeyRing, "cloudkmsKeyRing", "", "Cloud KMS key ring to use")
 	flag.BoolVar(&debug, "debug", true, "Debug mode on/off")
 	flag.StringVar(&env, "env", "dev", "Friendly environment name, used for file naming")
 	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be encrypted. Required if no `plaintext` given")
-	flag.StringVar(&gcpProjectID, "gcpProjectID", "", "GCP project ID which has cloudkms used for encryption")
-	flag.StringVar(&key, "key", "", "Cloudkms key to use")
-	flag.StringVar(&keyRing, "keyRing", "", "Cloudkms key ring to use")
+	flag.StringVar(&gcpProjectId, "gcpProjectId", "", "GCP project ID which has Cloud KMS used for encryption")
 	var pt string
 	flag.StringVar(&pt, "plaintext", "", "Plaintext to be encrypted. Required if no `pathToFile` given")
 	flag.StringVar(&saveAsSecretDomain, "saveAsSecretDomain", "", "Optional secret domain to use as file name for saving, must be provided if `saveAsSecretType` provided")
@@ -66,12 +66,12 @@ func main() {
 	log.Println("Initialising logger", os.Environ())
 	logClient := go_log.NewClient(debug)
 	logClient.Info(ctx, "Logger initialised",
+		go_log.FmtString(cloudkmsKey, "cloudkmsKey"),
+		go_log.FmtString(cloudkmsKeyRing, "cloudkmsKeyRing"),
 		go_log.FmtBool(debug, "debug"),
 		go_log.FmtString(env, "env"),
 		go_log.FmtString(pathToFile, "pathToFile"),
-		go_log.FmtString(gcpProjectID, "gcpProjectID"),
-		go_log.FmtString(key, "key"),
-		go_log.FmtString(keyRing, "keyRing"),
+		go_log.FmtString(gcpProjectId, "gcpProjectId"),
 		go_log.FmtBytes(plaintext, "plaintext"),
 		go_log.FmtString(saveAsSecretDomain, "saveAsSecretDomain"),
 		go_log.FmtString(saveAsSecretType, "saveAsSecretType"),
@@ -85,7 +85,12 @@ func main() {
 	logClient.Info(ctx, "Passed flag check")
 
 	logClient.Info(ctx, "Creating secrets client")
-	secretsClient, err := go_secrets.NewClient(ctx, env, gcpProjectID, keyRing, key)
+	secretsClient, err := go_secrets.NewClient(ctx, go_secrets.Config{
+		Env:             env,
+		GcpProjectId:    gcpProjectId,
+		CloudkmsKey:     cloudkmsKey,
+		CloudkmsKeyRing: cloudkmsKeyRing,
+	})
 	if err != nil {
 		logClient.Fatal(ctx, "Failed creating secrets client", go_log.FmtError(err))
 	}
@@ -101,12 +106,12 @@ func checkRequiredFlags() error {
 		return go_errors.New("Both or neither `saveAsSecretDomain` and `saveAsSecretType` flag values must be provided")
 	} else if env == "" {
 		return go_errors.New("Missing `env` flag value")
-	} else if gcpProjectID == "" {
-		return go_errors.New("Missing `gcpProjectID` flag value")
-	} else if key == "" {
-		return go_errors.New("Missing `key` flag value")
-	} else if keyRing == "" {
-		return go_errors.New("Missing `keyRing` flag value")
+	} else if gcpProjectId == "" {
+		return go_errors.New("Missing `gcpProjectId` flag value")
+	} else if cloudkmsKey == "" {
+		return go_errors.New("Missing `cloudkmsKey` flag value")
+	} else if cloudkmsKeyRing == "" {
+		return go_errors.New("Missing `cloudkmsKeyRing` flag value")
 	}
 	return nil
 }

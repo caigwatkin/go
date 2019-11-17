@@ -32,7 +32,7 @@ func TestNewClient(t *testing.T) {
 			desc:  "defaults",
 			input: "",
 			expected: client{
-				correlationIDKey: correlationIDKeyDefault,
+				correlationIdKey: correlationIdKeyDefault,
 				testKey:          testKeyDefault,
 			},
 		},
@@ -41,7 +41,7 @@ func TestNewClient(t *testing.T) {
 			desc:  "service",
 			input: "Service-Name",
 			expected: client{
-				correlationIDKey: "X-Service-Name-Correlation-Id",
+				correlationIdKey: "X-Service-Name-Correlation-Id",
 				testKey:          "X-Service-Name-Test",
 			},
 		},
@@ -50,13 +50,13 @@ func TestNewClient(t *testing.T) {
 	for i, d := range data {
 		result := NewClient(d.input)
 
-		if result.CorrelationIDKey() != d.expected.correlationIDKey {
+		if result.CorrelationIdKey() != d.expected.correlationIdKey {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.CorrelationIDKey()",
+				Unexpected: "result.CorrelationIdKey()",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected.correlationIDKey,
-				Result:     result.CorrelationIDKey(),
+				Expected:   d.expected.correlationIdKey,
+				Result:     result.CorrelationIdKey(),
 			}))
 		}
 		if result.TestKey() != d.expected.testKey {
@@ -71,7 +71,7 @@ func TestNewClient(t *testing.T) {
 	}
 }
 
-func TestCorrelationIDKey(t *testing.T) {
+func TestCorrelationIdKey(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    client
@@ -80,22 +80,22 @@ func TestCorrelationIDKey(t *testing.T) {
 		{
 			desc: "default",
 			input: client{
-				correlationIDKey: correlationIDKeyDefault,
+				correlationIdKey: correlationIdKeyDefault,
 			},
-			expected: correlationIDKeyDefault,
+			expected: correlationIdKeyDefault,
 		},
 
 		{
 			desc: "foo",
 			input: client{
-				correlationIDKey: "foo",
+				correlationIdKey: "foo",
 			},
 			expected: "foo",
 		},
 	}
 
 	for i, d := range data {
-		result := d.input.CorrelationIDKey()
+		result := d.input.CorrelationIdKey()
 
 		if result != d.expected {
 			t.Error(go_testing.Errorf(go_testing.Error{
@@ -110,7 +110,7 @@ func TestCorrelationIDKey(t *testing.T) {
 	}
 }
 
-func TestSetCorrelationIDKey(t *testing.T) {
+func TestSetCorrelationIdKey(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    string
@@ -131,8 +131,8 @@ func TestSetCorrelationIDKey(t *testing.T) {
 
 	for i, d := range data {
 		c := client{}
-		c.setCorrelationIDKey(d.input)
-		result := c.correlationIDKey
+		c.setCorrelationIdKey(d.input)
+		result := c.correlationIdKey
 
 		if result != d.expected {
 			t.Error(go_testing.Errorf(go_testing.Error{

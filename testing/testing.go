@@ -33,16 +33,14 @@ type Error struct {
 func Errorf(e Error) string {
 	b, err := json.MarshalIndent(e, "", "\t")
 	if err != nil {
-		return fmt.Sprintf(fmtString, e.Unexpected, e.Desc, e.At)
-	}
-	return string(b)
-}
-
-const fmtString = `{
+		return fmt.Sprintf(`{
 	"Unexpected": %q,
 	"Desc": %q,
 	"At": %d,
 	"Input": "potentially unmarshallable",
 	"Expected": "potentially unmarshallable",
 	"Result": "potentially unmarshallable"
-}`
+}`, e.Unexpected, e.Desc, e.At)
+	}
+	return string(b)
+}

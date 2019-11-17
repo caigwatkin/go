@@ -7,6 +7,6 @@ Decrypt secrets from plaintext or file using cloudkms.
 From repo root:
 
 ```bash
-go build -o=./bin/decrypt ./tools/cloudkms/decrypt
+go build -o=./bin/decrypt ./cmd/tools/cloudkms/decrypt
 ./bin/decrypt -h
 ```
