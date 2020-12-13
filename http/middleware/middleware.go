@@ -38,7 +38,7 @@ func Defaults(router *chi.Mux, headersClient go_headers.Client, logClient go_log
 	router.Use(middleware.URLFormat)
 	router.Use(populateContext(headersClient))
 	router.Use(logInfoRequests(logClient, excludePathsForLogInfoRequests))
-	router.Use(middleware.DefaultCompress)
+	router.Use(middleware.Compress(5))
 }
 
 func populateContext(headersClient go_headers.Client) func(next http.Handler) http.Handler {
