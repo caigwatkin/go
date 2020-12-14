@@ -70,10 +70,10 @@ func logInfoRequests(logClient go_log.Client, excludePaths []string) func(next h
 				}
 			}
 			if !exclude {
-				logClient.Info(r.Context(), "HTTP Request",
-					go_log.FmtString(r.URL.String(), "URL"),
-					go_log.FmtString(r.Method, "Method"),
-					go_log.FmtAny(r.Header, "Header"),
+				logClient.Info(r.Context(), "Request received",
+					go_log.FmtString(r.URL.String(), "r.URL.String()"),
+					go_log.FmtString(r.Method, "r.Method"),
+					go_log.FmtAny(r.Header, "r.Header"),
 				)
 			}
 			next.ServeHTTP(w, r)
