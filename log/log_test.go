@@ -2538,7 +2538,7 @@ func Test_FmtLog(t *testing.T) {
 			},
 			expected: expected{
 				Result:       "[message] [correlationId] [funcName:0] {\n\tfield\n}\x1b[0m",
-				ResultRemote: "[message] [correlationId] [funcName:0] {field}\x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] {field}",
 			},
 		},
 
@@ -2556,7 +2556,7 @@ func Test_FmtLog(t *testing.T) {
 			},
 			expected: expected{
 				Result:       "[message] [correlationId] [funcName:0] {\n\tfield,\n\talso_field\n}\x1b[0m",
-				ResultRemote: "[message] [correlationId] [funcName:0] {field,also_field}\x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] {field,also_field}",
 			},
 		},
 
@@ -2571,7 +2571,7 @@ func Test_FmtLog(t *testing.T) {
 			},
 			expected: expected{
 				Result:       "[message] [correlationId] [funcName:0] \x1b[0m",
-				ResultRemote: "[message] [correlationId] [funcName:0] \x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] ",
 			},
 		},
 
@@ -2586,7 +2586,7 @@ func Test_FmtLog(t *testing.T) {
 			},
 			expected: expected{
 				Result:       "[message] [correlationId] [funcName:0] \x1b[0m",
-				ResultRemote: "[message] [correlationId] [funcName:0] \x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] ",
 			},
 		},
 	}

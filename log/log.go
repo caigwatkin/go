@@ -54,13 +54,26 @@ func NewClient(ctx context.Context, config Config) Client {
 
 	remote = config.Env.Remote
 
+	flag := 0
+	colorCyan := ""
+	colorGreen := ""
+	colorRed := ""
+	colorYellow := ""
+	if !remote {
+		flag = log.Ldate | log.Ltime | log.Lmicroseconds
+		colorCyan = fmt.Sprintf("\x1b[%dm", cyan)
+		colorGreen = fmt.Sprintf("\x1b[%dm", green)
+		colorRed = fmt.Sprintf("\x1b[%dm", red)
+		colorYellow = fmt.Sprintf("\x1b[%dm", yellow)
+	}
+
 	c := client{
 		config:      config,
-		loggerDebug: log.New(os.Stdout, fmt.Sprintf("\x1b[%dmDEBUG ", green), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
-		loggerInfo:  log.New(os.Stdout, fmt.Sprintf("\x1b[%dmINFO  ", cyan), log.Ldate|log.Ltime|log.Lmicroseconds),
-		loggerWarn:  log.New(os.Stderr, fmt.Sprintf("\x1b[%dmWARN  ", yellow), log.Ldate|log.Ltime|log.Lmicroseconds),
-		loggerError: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmERROR ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
-		loggerFatal: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmFATAL ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
+		loggerDebug: log.New(os.Stdout, fmt.Sprintf("%sDEBUG ", colorGreen), flag),
+		loggerInfo:  log.New(os.Stdout, fmt.Sprintf("%sINFO  ", colorCyan), flag),
+		loggerWarn:  log.New(os.Stderr, fmt.Sprintf("%sWARN  ", colorYellow), flag),
+		loggerError: log.New(os.Stderr, fmt.Sprintf("%sERROR ", colorRed), flag),
+		loggerFatal: log.New(os.Stderr, fmt.Sprintf("%sFATAL ", colorRed), flag),
 	}
 
 	c.Info(ctx, "Initialized", FmtAny(config, "config"))
@@ -429,6 +442,9 @@ func runtimeLineAndFuncName(skip int) (int, string) {
 }
 
 func fmtLog(message, correlationId, funcName string, line int, fields []Field) string {
+	if remote {
+		return fmt.Sprintf("[%s] [%s] [%s:%d] %s", message, correlationId, funcName, line, fmtFields(fields))
+	}
 	return fmt.Sprintf("[%s] [%s] [%s:%d] %s\x1b[0m", message, correlationId, funcName, line, fmtFields(fields))
 }
 
