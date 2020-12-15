@@ -15,21 +15,22 @@ type Environment struct {
 	Port   int64
 }
 
+// TODO: test
 func New(app string) (env Environment, err error) {
 	log.Println("Generating environment", app)
 
-	debug := false
+	remote := false
+	if osDyno := os.Getenv("DYNO"); osDyno != "" {
+		remote = true
+	}
+
+	debug := !remote
 	if osDebug := os.Getenv("DEBUG"); osDebug != "" {
 		debug, err = strconv.ParseBool(osDebug)
 		if err != nil {
 			err = go_errors.Wrap(err, "Failed parsing environment variable DEBUG")
 			return
 		}
-	}
-
-	remote := false
-	if osDyno := os.Getenv("DYNO"); osDyno != "" {
-		remote = true
 	}
 
 	port := int64(8080)
