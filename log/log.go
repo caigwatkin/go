@@ -40,8 +40,10 @@ type Client interface {
 }
 
 // NewClient for logging
-func NewClient(enableDebug bool) Client {
-	return client{
+func NewClient(ctx context.Context, enableDebug bool) Client {
+	fmt.Println("Initializing", enableDebug)
+
+	c := client{
 		debug:       enableDebug,
 		loggerDebug: log.New(os.Stdout, fmt.Sprintf("\x1b[%dmDEBUG ", green), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
 		loggerInfo:  log.New(os.Stdout, fmt.Sprintf("\x1b[%dmINFO  ", cyan), log.Ldate|log.Ltime|log.Lmicroseconds),
@@ -49,6 +51,9 @@ func NewClient(enableDebug bool) Client {
 		loggerError: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmERROR ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
 		loggerFatal: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmFATAL ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
 	}
+
+	c.Info(ctx, "Initialized")
+	return c
 }
 
 type client struct {

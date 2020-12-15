@@ -17,6 +17,7 @@ limitations under the License.
 package log
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -52,7 +53,7 @@ func TestNewClient(t *testing.T) {
 	}
 
 	for i, d := range data {
-		result := NewClient(d.input)
+		result := NewClient(context.Background(), d.input)
 
 		if reflect.TypeOf(result) != reflect.TypeOf(d.expected) {
 			t.Error(go_testing.Errorf(go_testing.Error{

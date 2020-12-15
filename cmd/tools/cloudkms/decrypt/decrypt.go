@@ -61,9 +61,11 @@ func init() {
 func main() {
 	ctx := go_context.StartUp()
 
-	log.Println("Initialising logger", os.Environ())
-	logClient := go_log.NewClient(debug)
-	logClient.Info(ctx, "Logger initialised",
+	log.Println("Starting", os.Environ())
+
+	logClient := go_log.NewClient(ctx, debug)
+
+	logClient.Info(ctx, "Starting",
 		go_log.FmtString(ciphertext, "ciphertext"),
 		go_log.FmtBool(debug, "debug"),
 		go_log.FmtString(env, "env"),
@@ -82,17 +84,15 @@ func main() {
 	}
 	logClient.Info(ctx, "Passed flag check")
 
-	logClient.Info(ctx, "Creating secrets client")
 	secretsClient, err := go_secrets.NewClient(ctx, go_secrets.Config{
 		CloudkmsKey:     cloudkmsKey,
 		CloudkmsKeyRing: cloudkmsKeyRing,
 		Env:             env,
 		GcpProjectId:    gcpProjectId,
-	})
+	}, logClient)
 	if err != nil {
 		logClient.Fatal(ctx, "Failed creating secrets client", go_log.FmtError(err))
 	}
-	logClient.Info(ctx, "Created secrets client")
 
 	decrypt(ctx, logClient, secretsClient)
 }

@@ -17,7 +17,10 @@ limitations under the License.
 package headers
 
 import (
+	"context"
 	"fmt"
+
+	go_log "github.com/caigwatkin/go/log"
 )
 
 // Client interface
@@ -44,10 +47,14 @@ const (
 //
 // Service name should be in canonical case
 // Use an empty string to use default keys
-func NewClient(serviceName string) Client {
+func NewClient(ctx context.Context, logClient go_log.Client, serviceName string) Client {
+	logClient.Info(ctx, "Initializing", go_log.FmtString(serviceName, "serviceName"))
+
 	var c client
 	c.setCorrelationIdKey(serviceName)
 	c.setTestKey(serviceName)
+
+	logClient.Info(ctx, "Initialized")
 	return &c
 }
 

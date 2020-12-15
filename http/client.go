@@ -45,9 +45,11 @@ type client struct {
 //
 // Service name should be in canonical case as it is used for custom response headers
 // Use an empty string to use default keys
-func NewClient(logClient go_log.Client, serviceNameForHeaders string) Client {
+func NewClient(ctx context.Context, logClient go_log.Client, serviceNameForHeaders string) Client {
+	logClient.Info(ctx, "Initializing", go_log.FmtString(serviceNameForHeaders, "serviceNameForHeaders"))
+	logClient.Info(ctx, "Initialized")
 	return client{
-		headersClient: go_headers.NewClient(serviceNameForHeaders),
+		headersClient: go_headers.NewClient(ctx, logClient, serviceNameForHeaders),
 		logClient:     logClient,
 	}
 }

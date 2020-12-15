@@ -26,6 +26,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	go_errors "github.com/caigwatkin/go/errors"
+	go_log "github.com/caigwatkin/go/log"
 	cloudkms "google.golang.org/api/cloudkms/v1"
 )
 
@@ -46,7 +47,9 @@ type Config struct {
 }
 
 // NewClient returns an implementation of the client interface that allows secret management
-func NewClient(ctx context.Context, config Config) (Client, error) {
+func NewClient(ctx context.Context, config Config, logClient go_log.Client) (Client, error) {
+	logClient.Info(ctx, "Initializing", go_log.FmtAny(config, "config"))
+
 	cloudkmsService, err := cloudkms.NewService(ctx)
 	if err != nil {
 		return nil, go_errors.Wrap(err, "Failed initializing cloudkms service")
@@ -55,6 +58,8 @@ func NewClient(ctx context.Context, config Config) (Client, error) {
 	if err != nil {
 		return nil, go_errors.Wrap(err, "Failed initializing storage client")
 	}
+
+	logClient.Info(ctx, "Initialized")
 	return client{
 		cloudkmsService: cloudkmsService,
 		env:             config.Env,

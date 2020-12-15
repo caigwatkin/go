@@ -17,8 +17,10 @@ limitations under the License.
 package headers
 
 import (
+	"context"
 	"testing"
 
+	go_log_mock "github.com/caigwatkin/go/log/mock"
 	go_testing "github.com/caigwatkin/go/testing"
 )
 
@@ -48,7 +50,7 @@ func TestNewClient(t *testing.T) {
 	}
 
 	for i, d := range data {
-		result := NewClient(d.input)
+		result := NewClient(context.Background(), go_log_mock.Client, d.input)
 
 		if result.CorrelationIdKey() != d.expected.correlationIdKey {
 			t.Error(go_testing.Errorf(go_testing.Error{

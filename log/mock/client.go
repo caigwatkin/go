@@ -7,19 +7,19 @@ import (
 )
 
 var (
-	MockClientSuccess log.Client = mockClientSuccess{}
+	Client log.Client = client{}
 )
 
-type mockClientSuccess struct{}
+type client struct{}
 
-func (c mockClientSuccess) Debug(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Debug(_ context.Context, _ string, _ ...log.Field) {}
 
-func (c mockClientSuccess) Info(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Info(_ context.Context, _ string, _ ...log.Field) {}
 
-func (c mockClientSuccess) Notice(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Notice(_ context.Context, _ string, _ ...log.Field) {}
 
-func (c mockClientSuccess) Warn(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Warn(_ context.Context, _ string, _ ...log.Field) {}
 
-func (c mockClientSuccess) Error(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Error(_ context.Context, _ string, _ ...log.Field) {}
 
-func (c mockClientSuccess) Fatal(_ context.Context, _ string, _ ...log.Field) {}
+func (c client) Fatal(_ context.Context, _ string, _ ...log.Field) {}
