@@ -60,14 +60,15 @@ func init() {
 }
 
 func main() {
-	ctx := go_context.StartUp()
-
-	log.Println("Starting", os.Environ())
+	osEnviron := os.Environ()
+	log.Println("Starting", osEnviron)
 
 	environment, err := go_environment.New("Encrypt")
 	if err != nil {
 		log.Fatal("Failed generating new environment", err)
 	}
+
+	ctx := go_context.StartUp()
 
 	logClient := go_log.NewClient(ctx, go_log.Config{
 		Env: environment,
@@ -82,7 +83,7 @@ func main() {
 		go_log.FmtBytes(plaintext, "plaintext"),
 		go_log.FmtString(saveAsSecretDomain, "saveAsSecretDomain"),
 		go_log.FmtString(saveAsSecretType, "saveAsSecretType"),
-		go_log.FmtStrings(os.Environ(), "os.Environ()"),
+		go_log.FmtStrings(osEnviron, "osEnviron"),
 	)
 
 	logClient.Info(ctx, "Checking required flags")
