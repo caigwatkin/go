@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 
 	go_context "github.com/caigwatkin/go/context"
+	go_environment "github.com/caigwatkin/go/environment"
 	go_errors "github.com/caigwatkin/go/errors"
 	go_log "github.com/caigwatkin/go/log"
 	go_secrets "github.com/caigwatkin/go/secrets"
@@ -35,7 +36,6 @@ var (
 	ciphertext         string
 	cloudkmsKey        string
 	cloudkmsKeyRing    string
-	debug              bool
 	env                string
 	gcpProjectId       string
 	pathToFile         string
@@ -48,7 +48,6 @@ func init() {
 	flag.StringVar(&ciphertext, "ciphertext", "", "Ciphertext to be decrypted. Required if no `pathToFile` given")
 	flag.StringVar(&cloudkmsKey, "cloudkmsKey", "", "Cloud KMS key to use")
 	flag.StringVar(&cloudkmsKeyRing, "cloudkmsKeyRing", "", "Cloud KMS key ring to use")
-	flag.BoolVar(&debug, "debug", true, "Debug mode on/off")
 	flag.StringVar(&env, "env", "dev", "Friendly environment name, used for file naming")
 	flag.StringVar(&pathToFile, "pathToFile", "", "Path to file to be decrypted. Required if no `ciphertext` given")
 	flag.StringVar(&gcpProjectId, "gcpProjectId", "", "GCP project ID which has Cloud KMS used for decryption")
@@ -63,11 +62,17 @@ func main() {
 
 	log.Println("Starting", os.Environ())
 
-	logClient := go_log.NewClient(ctx, debug)
+	environment, err := go_environment.New("Decrypt")
+	if err != nil {
+		log.Fatal("Failed generating new environment", err)
+	}
+
+	logClient := go_log.NewClient(ctx, go_log.Config{
+		Env: environment,
+	})
 
 	logClient.Info(ctx, "Starting",
 		go_log.FmtString(ciphertext, "ciphertext"),
-		go_log.FmtBool(debug, "debug"),
 		go_log.FmtString(env, "env"),
 		go_log.FmtString(pathToFile, "pathToFile"),
 		go_log.FmtString(gcpProjectId, "gcpProjectId"),

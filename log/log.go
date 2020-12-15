@@ -28,6 +28,7 @@ import (
 	"time"
 
 	go_context "github.com/caigwatkin/go/context"
+	go_environment "github.com/caigwatkin/go/environment"
 )
 
 type Client interface {
@@ -39,12 +40,22 @@ type Client interface {
 	Fatal(ctx context.Context, message string, fields ...Field)
 }
 
+var (
+	remote bool
+)
+
+type Config struct {
+	Env go_environment.Environment
+}
+
 // NewClient for logging
-func NewClient(ctx context.Context, enableDebug bool) Client {
-	fmt.Println("Initializing", enableDebug)
+func NewClient(ctx context.Context, config Config) Client {
+	fmt.Println("Initializing", config)
+
+	remote = config.Env.Remote
 
 	c := client{
-		debug:       enableDebug,
+		config:      config,
 		loggerDebug: log.New(os.Stdout, fmt.Sprintf("\x1b[%dmDEBUG ", green), log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile),
 		loggerInfo:  log.New(os.Stdout, fmt.Sprintf("\x1b[%dmINFO  ", cyan), log.Ldate|log.Ltime|log.Lmicroseconds),
 		loggerWarn:  log.New(os.Stderr, fmt.Sprintf("\x1b[%dmWARN  ", yellow), log.Ldate|log.Ltime|log.Lmicroseconds),
@@ -52,12 +63,12 @@ func NewClient(ctx context.Context, enableDebug bool) Client {
 		loggerFatal: log.New(os.Stderr, fmt.Sprintf("\x1b[%dmFATAL ", red), log.Ldate|log.Ltime|log.Lmicroseconds),
 	}
 
-	c.Info(ctx, "Initialized")
+	c.Info(ctx, "Initialized", FmtAny(config, "config"))
 	return c
 }
 
 type client struct {
-	debug       bool
+	config      Config
 	loggerDebug *log.Logger
 	loggerInfo  *log.Logger
 	loggerWarn  *log.Logger
@@ -67,7 +78,7 @@ type client struct {
 
 // Debug log at debug level
 func (c client) Debug(ctx context.Context, message string, fields ...Field) {
-	if c.debug {
+	if c.config.Env.Debug {
 		c.output(ctx, severityDebug, message, fields)
 	}
 }
@@ -106,6 +117,16 @@ type Field string
 // Type and value will be logged
 // If JSON unmarshalling fails, the value will not be logged
 func FmtAny(value interface{}, name string) Field {
+	if remote {
+		if value == nil {
+			return Field(fmt.Sprintf("%q:null", name))
+		}
+		blob, err := json.Marshal(value)
+		if err != nil {
+			return Field(fmt.Sprintf("%q:{\"type\":%q,\"value\":\"NOT JSON MARSHALLABLE\"}", name, reflect.TypeOf(value)))
+		}
+		return Field(fmt.Sprintf("%q:{\"type\":%q,\"value\":%s}", name, reflect.TypeOf(value), blob))
+	}
 	if value == nil {
 		return Field(fmt.Sprintf("%q: null", name))
 	}
@@ -122,6 +143,23 @@ func FmtAny(value interface{}, name string) Field {
 // Type and value will be logged
 // If JSON unmarshalling fails, the value will not be logged
 func FmtAnys(values []interface{}, name string) Field {
+	if remote {
+		var vals []interface{}
+		for _, v := range values {
+			if v == nil {
+				vals = append(vals, "null")
+				continue
+			}
+			var s string
+			if blob, err := json.Marshal(v); err != nil {
+				s = fmt.Sprintf("{\"type\":%q,\"value\":\"NOT JSON MARSHALLABLE\"}", reflect.TypeOf(v))
+			} else {
+				s = fmt.Sprintf("{\"type\":%q,\"value\":%s}", reflect.TypeOf(v), blob)
+			}
+			vals = append(vals, s)
+		}
+		return fmtSlice(vals, name, "%s")
+	}
 	var vals []interface{}
 	for _, v := range values {
 		if v == nil {
@@ -141,6 +179,9 @@ func FmtAnys(values []interface{}, name string) Field {
 
 // FmtBool as name/value pair for logging
 func FmtBool(value bool, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%t", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %t", name, value))
 }
 
@@ -155,16 +196,25 @@ func FmtBools(values []bool, name string) Field {
 
 // FmtByte as name/value pair for logging
 func FmtByte(value byte, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%q", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %q", name, value))
 }
 
 // FmtBytes as name/value pair for logging
 func FmtBytes(value []byte, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%q", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %q", name, value))
 }
 
 // FmtDuration as name/value pair for logging
 func FmtDuration(value time.Duration, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%q", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %q", name, value))
 }
 
@@ -179,6 +229,17 @@ func FmtDurations(values []time.Duration, name string) Field {
 
 // FmtError as name/value pair for logging
 func FmtError(err error) Field {
+	if remote {
+		if err == nil {
+			return Field("\"error\":null")
+		}
+		friendly := fmt.Sprintf("%s", err)
+		trace := fmt.Sprintf("%+v", err)
+		if trace == friendly {
+			return Field(fmt.Sprintf("\"error\":%q", friendly))
+		}
+		return Field(fmt.Sprintf("\"error\":{\"friendly\":%q,\"trace\":%s}", friendly, trace))
+	}
 	if err == nil {
 		return Field("\"error\": null")
 	}
@@ -192,6 +253,9 @@ func FmtError(err error) Field {
 
 // FmtFloat32 as name/value pair for logging
 func FmtFloat32(value float32, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%.5f", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %.5f", name, value))
 }
 
@@ -206,6 +270,9 @@ func FmtFloat32s(values []float32, name string) Field {
 
 // FmtFloat64 as name/value pair for logging
 func FmtFloat64(value float64, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%.10f", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %.10f", name, value))
 }
 
@@ -220,6 +287,9 @@ func FmtFloat64s(values []float64, name string) Field {
 
 // FmtInt as name/value pair for logging
 func FmtInt(value int, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%d", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %d", name, value))
 }
 
@@ -234,6 +304,9 @@ func FmtInts(values []int, name string) Field {
 
 // FmtInt32 as name/value pair for logging
 func FmtInt32(value int32, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%d", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %d", name, value))
 }
 
@@ -248,6 +321,9 @@ func FmtInt32s(values []int32, name string) Field {
 
 // FmtInt64 as name/value pair for logging
 func FmtInt64(value int64, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%d", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %d", name, value))
 }
 
@@ -262,6 +338,9 @@ func FmtInt64s(values []int64, name string) Field {
 
 // FmtString as name/value pair for logging
 func FmtString(value string, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%q", name, value))
+	}
 	return Field(fmt.Sprintf("%q: %q", name, value))
 }
 
@@ -276,6 +355,9 @@ func FmtStrings(values []string, name string) Field {
 
 // FmtTime as name/value pair for logging
 func FmtTime(value time.Time, name string) Field {
+	if remote {
+		return Field(fmt.Sprintf("%q:%q", name, value.Format(time.RFC3339Nano)))
+	}
 	return Field(fmt.Sprintf("%q: %q", name, value.Format(time.RFC3339Nano)))
 }
 
@@ -289,6 +371,16 @@ func FmtTimes(values []time.Time, name string) Field {
 }
 
 func fmtSlice(values []interface{}, name, format string) Field {
+	if remote {
+		if len(values) == 0 {
+			return Field(fmt.Sprintf("%q:[]", name))
+		}
+		f := make([]string, len(values))
+		for i, v := range values {
+			f[i] = fmt.Sprintf(format, v)
+		}
+		return Field(fmt.Sprintf("%q:[%s]", name, strings.Join(f, ",")))
+	}
 	if len(values) == 0 {
 		return Field(fmt.Sprintf("%q: []", name))
 	}
@@ -347,6 +439,9 @@ func fmtFields(fields []Field) string {
 	var fs []string
 	for _, field := range fields {
 		fs = append(fs, string(field))
+	}
+	if remote {
+		return fmt.Sprintf("{%s}", strings.Join(fs, ","))
 	}
 	return fmt.Sprintf("{\n\t%s\n}", strings.Join(fs, ",\n\t"))
 }

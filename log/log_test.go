@@ -25,29 +25,30 @@ import (
 	"testing"
 	"time"
 
+	go_environment "github.com/caigwatkin/go/environment"
 	go_errors "github.com/caigwatkin/go/errors"
 	go_testing "github.com/caigwatkin/go/testing"
 )
 
-func TestNewClient(t *testing.T) {
+func Test_NewClient(t *testing.T) {
 	var data = []struct {
 		desc     string
-		input    bool
+		input    Config
 		expected client
 	}{
 		{
-			desc:  "debug enabled",
-			input: true,
-			expected: client{
-				debug: true,
+			desc: "config",
+			input: Config{
+				Env: go_environment.Environment{
+					App: "app",
+				},
 			},
-		},
-
-		{
-			desc:  "debug disabled",
-			input: false,
 			expected: client{
-				debug: false,
+				config: Config{
+					Env: go_environment.Environment{
+						App: "app",
+					},
+				},
 			},
 		},
 	}
@@ -60,6 +61,7 @@ func TestNewClient(t *testing.T) {
 				Unexpected: "result",
 				Desc:       d.desc,
 				At:         i,
+				Input:      d.input,
 				Expected:   reflect.TypeOf(d.expected),
 				Result:     reflect.TypeOf(result),
 			}))
@@ -69,1556 +71,2338 @@ func TestNewClient(t *testing.T) {
 				Unexpected: "result",
 				Desc:       d.desc,
 				At:         i,
+				Input:      d.input,
 				Expected:   d.expected,
 				Result:     result,
 			}))
 
-		} else if v.debug != d.expected.debug {
+		} else if v.config != d.expected.config {
 			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.debug",
+				Unexpected: "result.config",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected.debug,
-				Result:     v.debug,
+				Input:      d.input,
+				Expected:   d.expected.config,
+				Result:     v.config,
 			}))
 		}
 	}
 }
 
-func TestFmtAny(t *testing.T) {
+func Test_FmtAny(t *testing.T) {
 	notJSONMarshallableFunc := func() {}
-	type input struct {
-		value interface{}
-		name  string
-	}
 	type valueStruct struct {
 		X string `json:"x,omitempty"`
 		Y int    `json:"y,omitempty"`
 		Z bool   `json:"z,omitempty"`
 	}
+	type input struct {
+		Value interface{}
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
+	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc  string
+		input input
+		expected
 	}{
 		{
-			desc: "struct as indented JSON",
+			desc: "struct",
 			input: input{
-				value: valueStruct{
-					X: "some string",
+				Value: valueStruct{
+					X: "some_string",
 					Y: 2,
 					Z: true,
 				},
-				name: "name",
+				Name: "name",
 			},
-			expected: "\"name\": {\n\t\t\"type\": \"log.valueStruct\",\n\t\t\"value\": {\n\t\t\t\"x\": \"some string\",\n\t\t\t\"y\": 2,\n\t\t\t\"z\": true\n\t\t}\n\t}",
+			expected: expected{
+				Result:       "\"name\": {\n\t\t\"type\": \"log.valueStruct\",\n\t\t\"value\": {\n\t\t\t\"x\": \"some_string\",\n\t\t\t\"y\": 2,\n\t\t\t\"z\": true\n\t\t}\n\t}",
+				ResultRemote: "\"name\":{\"type\":\"log.valueStruct\",\"value\":{\"x\":\"some_string\",\"y\":2,\"z\":true}}",
+			},
 		},
 
 		{
 			desc: "struct omitempty",
 			input: input{
-				value: valueStruct{
+				Value: valueStruct{
 					X: "",
 					Y: 0,
 					Z: false,
 				},
-				name: "name",
+				Name: "name",
 			},
-			expected: "\"name\": {\n\t\t\"type\": \"log.valueStruct\",\n\t\t\"value\": {}\n\t}",
+			expected: expected{
+				Result:       "\"name\": {\n\t\t\"type\": \"log.valueStruct\",\n\t\t\"value\": {}\n\t}",
+				ResultRemote: "\"name\":{\"type\":\"log.valueStruct\",\"value\":{}}",
+			},
 		},
 
 		{
 			desc: "not JSON marshallable",
 			input: input{
-				value: notJSONMarshallableFunc,
-				name:  "name",
+				Value: notJSONMarshallableFunc,
+				Name:  "name",
 			},
-			expected: "\"name\": {\n\t\t\"type\": \"func()\",\n\t\t\"value\": \"NOT JSON MARSHALLABLE\"\n\t}",
+			expected: expected{
+				Result:       "\"name\": {\n\t\t\"type\": \"func()\",\n\t\t\"value\": \"NOT JSON MARSHALLABLE\"\n\t}",
+				ResultRemote: "\"name\":{\"type\":\"func()\",\"value\":\"NOT JSON MARSHALLABLE\"}",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": null",
+			expected: expected{
+				Result:       "\"name\": null",
+				ResultRemote: "\"name\":null",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtAny(d.input.value, d.input.name)
+		remote = false
+		result := FmtAny(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtAny(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtAnys(t *testing.T) {
+func Test_FmtAnys(t *testing.T) {
 	notJSONMarshallableFunc := func() {}
 	type input struct {
-		value []interface{}
-		name  string
+		Value []interface{}
+		Name  string
 	}
 	type valueStruct struct {
 		X string `json:"x,omitempty"`
 		Y int    `json:"y,omitempty"`
 		Z bool   `json:"z,omitempty"`
 	}
+	type expected struct {
+		Result       string
+		ResultRemote string
+	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []interface{}{
+				Value: []interface{}{
 					valueStruct{
-						X: "some string",
+						X: "some_string",
 						Y: 2,
 						Z: true,
 					},
 				},
-				name: "name",
+				Name: "name",
 			},
-			expected: "\"name\": [\n\t\t{\n\t\t\t\"type\": \"log.valueStruct\",\n\t\t\t\"value\": {\n\t\t\t\t\"x\": \"some string\",\n\t\t\t\t\"y\": 2,\n\t\t\t\t\"z\": true\n\t\t\t}\n\t\t}\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t{\n\t\t\t\"type\": \"log.valueStruct\",\n\t\t\t\"value\": {\n\t\t\t\t\"x\": \"some_string\",\n\t\t\t\t\"y\": 2,\n\t\t\t\t\"z\": true\n\t\t\t}\n\t\t}\n\t]",
+				ResultRemote: "\"name\":[{\"type\":\"log.valueStruct\",\"value\":{\"x\":\"some_string\",\"y\":2,\"z\":true}}]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []interface{}{
+				Value: []interface{}{
 					valueStruct{
-						X: "some string",
+						X: "some_string",
 						Y: 2,
 						Z: true,
 					},
 					nil,
 					notJSONMarshallableFunc,
 				},
-				name: "name",
+				Name: "name",
 			},
-			expected: "\"name\": [\n\t\t{\n\t\t\t\"type\": \"log.valueStruct\",\n\t\t\t\"value\": {\n\t\t\t\t\"x\": \"some string\",\n\t\t\t\t\"y\": 2,\n\t\t\t\t\"z\": true\n\t\t\t}\n\t\t},\n\t\tnull,\n\t\t{\n\t\t\t\"type\": \"func()\",\n\t\t\t\"value\": \"NOT JSON MARSHALLABLE\"\n\t\t}\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t{\n\t\t\t\"type\": \"log.valueStruct\",\n\t\t\t\"value\": {\n\t\t\t\t\"x\": \"some_string\",\n\t\t\t\t\"y\": 2,\n\t\t\t\t\"z\": true\n\t\t\t}\n\t\t},\n\t\tnull,\n\t\t{\n\t\t\t\"type\": \"func()\",\n\t\t\t\"value\": \"NOT JSON MARSHALLABLE\"\n\t\t}\n\t]",
+				ResultRemote: "\"name\":[{\"type\":\"log.valueStruct\",\"value\":{\"x\":\"some_string\",\"y\":2,\"z\":true}},null,{\"type\":\"func()\",\"value\":\"NOT JSON MARSHALLABLE\"}]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []interface{}{},
-				name:  "name",
+				Value: []interface{}{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtAnys(d.input.value, d.input.name)
+		remote = false
+		result := FmtAnys(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtAnys(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtBool(t *testing.T) {
+func Test_FmtBool(t *testing.T) {
 	type input struct {
-		value bool
-		name  string
+		Value bool
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "false",
 			input: input{
-				value: false,
-				name:  "name",
+				Value: false,
+				Name:  "name",
 			},
-			expected: "\"name\": false",
+			expected: expected{
+				Result:       "\"name\": false",
+				ResultRemote: "\"name\":false",
+			},
 		},
 
 		{
 			desc: "true",
 			input: input{
-				value: true,
-				name:  "name",
+				Value: true,
+				Name:  "name",
 			},
-			expected: "\"name\": true",
+			expected: expected{
+				Result:       "\"name\": true",
+				ResultRemote: "\"name\":true",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtBool(d.input.value, d.input.name)
+		remote = false
+		result := FmtBool(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtBool(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtBools(t *testing.T) {
+func Test_FmtBools(t *testing.T) {
 	type input struct {
-		value []bool
-		name  string
+		Value []bool
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []bool{true},
-				name:  "name",
+				Value: []bool{true},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\ttrue\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\ttrue\n\t]",
+				ResultRemote: "\"name\":[true]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []bool{true, false},
-				name:  "name",
+				Value: []bool{true, false},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\ttrue,\n\t\tfalse\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\ttrue,\n\t\tfalse\n\t]",
+				ResultRemote: "\"name\":[true,false]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []bool{},
-				name:  "name",
+				Value: []bool{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtBools(d.input.value, d.input.name)
+		remote = false
+		result := FmtBools(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtBools(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtByte(t *testing.T) {
+func Test_FmtByte(t *testing.T) {
 	type input struct {
-		value byte
-		name  string
+		Value byte
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "Character",
 			input: input{
-				value: 'A',
-				name:  "name",
+				Value: 'A',
+				Name:  "name",
 			},
-			expected: "\"name\": 'A'",
+			expected: expected{
+				Result:       "\"name\": 'A'",
+				ResultRemote: "\"name\":'A'",
+			},
 		},
 
 		{
 			desc: "integer",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": '\\x00'",
+			expected: expected{
+				Result:       "\"name\": '\\x00'",
+				ResultRemote: "\"name\":'\\x00'",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtByte(d.input.value, d.input.name)
+		remote = false
+		result := FmtByte(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtByte(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtBytes(t *testing.T) {
+func Test_FmtBytes(t *testing.T) {
 	type input struct {
-		value []byte
-		name  string
+		Value []byte
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": \"\"",
+			expected: expected{
+				Result:       "\"name\": \"\"",
+				ResultRemote: "\"name\":\"\"",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []byte{},
-				name:  "name",
+				Value: []byte{},
+				Name:  "name",
 			},
-			expected: "\"name\": \"\"",
+			expected: expected{
+				Result:       "\"name\": \"\"",
+				ResultRemote: "\"name\":\"\"",
+			},
 		},
 
 		{
 			desc: "string",
 			input: input{
-				value: []byte("some text"),
-				name:  "name",
+				Value: []byte("some_string"),
+				Name:  "name",
 			},
-			expected: "\"name\": \"some text\"",
+			expected: expected{
+				Result:       "\"name\": \"some_string\"",
+				ResultRemote: "\"name\":\"some_string\"",
+			},
 		},
 
 		{
 			desc: "characters",
 			input: input{
-				value: []byte{'A', 'a', 'B'},
-				name:  "name",
+				Value: []byte{'A', 'a', 'B'},
+				Name:  "name",
 			},
-			expected: "\"name\": \"AaB\"",
+			expected: expected{
+				Result:       "\"name\": \"AaB\"",
+				ResultRemote: "\"name\":\"AaB\"",
+			},
 		},
 
 		{
 			desc: "characters",
 			input: input{
-				value: []byte{0, 25, 18},
-				name:  "name",
+				Value: []byte{0, 25, 18},
+				Name:  "name",
 			},
-			expected: "\"name\": \"\\x00\\x19\\x12\"",
+			expected: expected{
+				Result:       "\"name\": \"\\x00\\x19\\x12\"",
+				ResultRemote: "\"name\":\"\\x00\\x19\\x12\"",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtBytes(d.input.value, d.input.name)
+		remote = false
+		result := FmtBytes(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtBytes(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtDuration(t *testing.T) {
+func Test_FmtDuration(t *testing.T) {
 	type input struct {
-		value time.Duration
-		name  string
+		Value time.Duration
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "nano",
 			input: input{
-				value: time.Nanosecond,
-				name:  "name",
+				Value: time.Nanosecond,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1ns\"",
+			expected: expected{
+				Result:       "\"name\": \"1ns\"",
+				ResultRemote: "\"name\":\"1ns\"",
+			},
 		},
 
 		{
 			desc: "micro",
 			input: input{
-				value: time.Microsecond,
-				name:  "name",
+				Value: time.Microsecond,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1µs\"",
+			expected: expected{
+				Result:       "\"name\": \"1µs\"",
+				ResultRemote: "\"name\":\"1µs\"",
+			},
 		},
 
 		{
 			desc: "milli",
 			input: input{
-				value: time.Millisecond,
-				name:  "name",
+				Value: time.Millisecond,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1ms\"",
+			expected: expected{
+				Result:       "\"name\": \"1ms\"",
+				ResultRemote: "\"name\":\"1ms\"",
+			},
 		},
 
 		{
 			desc: "second",
 			input: input{
-				value: time.Second,
-				name:  "name",
+				Value: time.Second,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1s\"",
+			expected: expected{
+				Result:       "\"name\": \"1s\"",
+				ResultRemote: "\"name\":\"1s\"",
+			},
 		},
 
 		{
 			desc: "minute",
 			input: input{
-				value: time.Minute,
-				name:  "name",
+				Value: time.Minute,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1m0s\"",
+			expected: expected{
+				Result:       "\"name\": \"1m0s\"",
+				ResultRemote: "\"name\":\"1m0s\"",
+			},
 		},
 
 		{
 			desc: "hour",
 			input: input{
-				value: time.Hour,
-				name:  "name",
+				Value: time.Hour,
+				Name:  "name",
 			},
-			expected: "\"name\": \"1h0m0s\"",
+			expected: expected{
+				Result:       "\"name\": \"1h0m0s\"",
+				ResultRemote: "\"name\":\"1h0m0s\"",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtDuration(d.input.value, d.input.name)
+		remote = false
+		result := FmtDuration(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtDuration(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtDurations(t *testing.T) {
+func Test_FmtDurations(t *testing.T) {
 	type input struct {
-		value []time.Duration
-		name  string
+		Value []time.Duration
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []time.Duration{time.Nanosecond},
-				name:  "name",
+				Value: []time.Duration{time.Nanosecond},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"1ns\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"1ns\"\n\t]",
+				ResultRemote: "\"name\":[\"1ns\"]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []time.Duration{time.Nanosecond, time.Microsecond},
-				name:  "name",
+				Value: []time.Duration{time.Nanosecond, time.Microsecond},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"1ns\",\n\t\t\"1µs\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"1ns\",\n\t\t\"1µs\"\n\t]",
+				ResultRemote: "\"name\":[\"1ns\",\"1µs\"]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []time.Duration{},
-				name:  "name",
+				Value: []time.Duration{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtDurations(d.input.value, d.input.name)
+		remote = false
+		result := FmtDurations(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtDurations(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtError(t *testing.T) {
+func Test_FmtError(t *testing.T) {
 	errWithTrace := go_errors.New("error")
 	trace := fmt.Sprintf("%+v", errWithTrace)
+	type input struct {
+		err error
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
+	}
 	var data = []struct {
 		desc     string
-		input    error
-		expected string
+		input    input
+		expected expected
 	}{
 		{
-			desc:     "nil",
-			input:    nil,
-			expected: "\"error\": null",
+			desc: "nil",
+			input: input{
+				err: nil,
+			},
+			expected: expected{
+				Result:       "\"error\": null",
+				ResultRemote: "\"error\":null",
+			},
 		},
 
 		{
-			desc:     "no trace",
-			input:    errors.New("some error"),
-			expected: "\"error\": \"some error\"",
+			desc: "no trace",
+			input: input{
+				err: errors.New("some_string"),
+			},
+			expected: expected{
+				Result:       "\"error\": \"some_string\"",
+				ResultRemote: "\"error\":\"some_string\"",
+			},
 		},
 
 		{
-			desc:     "trace",
-			input:    errWithTrace,
-			expected: fmt.Sprintf("\"error\": {\n\t\t\"friendly\": \"error\",\n\t\t\"trace\": %s\n\t}", trace),
+			desc: "trace",
+			input: input{
+				err: errWithTrace,
+			},
+			expected: expected{
+				Result:       fmt.Sprintf("\"error\": {\n\t\t\"friendly\": \"error\",\n\t\t\"trace\": %s\n\t}", trace),
+				ResultRemote: fmt.Sprintf("\"error\":{\"friendly\":\"error\",\"trace\":%s}", trace),
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtError(d.input)
+		remote = false
+		result := FmtError(d.input.err)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtError(d.input.err)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtFloat32(t *testing.T) {
+func Test_FmtFloat32(t *testing.T) {
 	type input struct {
-		value float32
-		name  string
+		Value float32
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "zero",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": 0.00000",
+			expected: expected{
+				Result:       "\"name\": 0.00000",
+				ResultRemote: "\"name\":0.00000",
+			},
 		},
 
 		{
 			desc: "positive whole",
 			input: input{
-				value: 1,
-				name:  "name",
+				Value: 1,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.00000",
+			expected: expected{
+				Result:       "\"name\": 1.00000",
+				ResultRemote: "\"name\":1.00000",
+			},
 		},
 
 		{
 			desc: "positive with dp",
 			input: input{
-				value: 1.12345,
-				name:  "name",
+				Value: 1.12345,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.12345",
+			expected: expected{
+				Result:       "\"name\": 1.12345",
+				ResultRemote: "\"name\":1.12345",
+			},
 		},
 
 		{
 			desc: "positive with dp greater than 5 round down",
 			input: input{
-				value: 1.123454,
-				name:  "name",
+				Value: 1.123454,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.12345",
+			expected: expected{
+				Result:       "\"name\": 1.12345",
+				ResultRemote: "\"name\":1.12345",
+			},
 		},
 
 		{
 			desc: "positive with dp greater than 5 round up",
 			input: input{
-				value: 1.123455,
-				name:  "name",
+				Value: 1.123455,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.12346",
+			expected: expected{
+				Result:       "\"name\": 1.12346",
+				ResultRemote: "\"name\":1.12346",
+			},
 		},
 
 		{
 			desc: "negative whole",
 			input: input{
-				value: -1,
-				name:  "name",
+				Value: -1,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.00000",
+			expected: expected{
+				Result:       "\"name\": -1.00000",
+				ResultRemote: "\"name\":-1.00000",
+			},
 		},
 
 		{
 			desc: "negative with dp",
 			input: input{
-				value: -1.12345,
-				name:  "name",
+				Value: -1.12345,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.12345",
+			expected: expected{
+				Result:       "\"name\": -1.12345",
+				ResultRemote: "\"name\":-1.12345",
+			},
 		},
 
 		{
 			desc: "negative with dp greater than 5 round down",
 			input: input{
-				value: -1.123454,
-				name:  "name",
+				Value: -1.123454,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.12345",
+			expected: expected{
+				Result:       "\"name\": -1.12345",
+				ResultRemote: "\"name\":-1.12345",
+			},
 		},
 
 		{
 			desc: "negative with dp greater than 5 round up",
 			input: input{
-				value: -1.123455,
-				name:  "name",
+				Value: -1.123455,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.12346",
+			expected: expected{
+				Result:       "\"name\": -1.12346",
+				ResultRemote: "\"name\":-1.12346",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtFloat32(d.input.value, d.input.name)
+		remote = false
+		result := FmtFloat32(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtFloat32(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtFloat32s(t *testing.T) {
+func Test_FmtFloat32s(t *testing.T) {
 	type input struct {
-		value []float32
-		name  string
+		Value []float32
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []float32{1.2},
-				name:  "name",
+				Value: []float32{1.2},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1.20000\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1.20000\n\t]",
+				ResultRemote: "\"name\":[1.20000]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []float32{1.2, 3.4},
-				name:  "name",
+				Value: []float32{1.2, 3.4},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1.20000,\n\t\t3.40000\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1.20000,\n\t\t3.40000\n\t]",
+				ResultRemote: "\"name\":[1.20000,3.40000]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []float32{},
-				name:  "name",
+				Value: []float32{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtFloat32s(d.input.value, d.input.name)
+		remote = false
+		result := FmtFloat32s(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtFloat32s(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtFloat64(t *testing.T) {
+func Test_FmtFloat64(t *testing.T) {
 	type input struct {
-		value float64
-		name  string
+		Value float64
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "zero",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": 0.0000000000",
+			expected: expected{
+				Result:       "\"name\": 0.0000000000",
+				ResultRemote: "\"name\":0.0000000000",
+			},
 		},
 
 		{
 			desc: "positive whole",
 			input: input{
-				value: 1,
-				name:  "name",
+				Value: 1,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.0000000000",
+			expected: expected{
+				Result:       "\"name\": 1.0000000000",
+				ResultRemote: "\"name\":1.0000000000",
+			},
 		},
 
 		{
 			desc: "positive with dp",
 			input: input{
-				value: 1.1234567890,
-				name:  "name",
+				Value: 1.1234567890,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.1234567890",
+			expected: expected{
+				Result:       "\"name\": 1.1234567890",
+				ResultRemote: "\"name\":1.1234567890",
+			},
 		},
 
 		{
 			desc: "positive with dp greater than 10 round down",
 			input: input{
-				value: 1.12345678904,
-				name:  "name",
+				Value: 1.12345678904,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.1234567890",
+			expected: expected{
+				Result:       "\"name\": 1.1234567890",
+				ResultRemote: "\"name\":1.1234567890",
+			},
 		},
 
 		{
 			desc: "positive with dp greater than 10 round up",
 			input: input{
-				value: 1.12345678905,
-				name:  "name",
+				Value: 1.12345678905,
+				Name:  "name",
 			},
-			expected: "\"name\": 1.1234567891",
+			expected: expected{
+				Result:       "\"name\": 1.1234567891",
+				ResultRemote: "\"name\":1.1234567891",
+			},
 		},
 
 		{
 			desc: "negative whole",
 			input: input{
-				value: -1,
-				name:  "name",
+				Value: -1,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.0000000000",
+			expected: expected{
+				Result:       "\"name\": -1.0000000000",
+				ResultRemote: "\"name\":-1.0000000000",
+			},
 		},
 
 		{
 			desc: "negative with dp",
 			input: input{
-				value: -1.1234567890,
-				name:  "name",
+				Value: -1.1234567890,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.1234567890",
+			expected: expected{
+				Result:       "\"name\": -1.1234567890",
+				ResultRemote: "\"name\":-1.1234567890",
+			},
 		},
 
 		{
 			desc: "negative with dp greater than 10 round down",
 			input: input{
-				value: -1.12345678904,
-				name:  "name",
+				Value: -1.12345678904,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.1234567890",
+			expected: expected{
+				Result:       "\"name\": -1.1234567890",
+				ResultRemote: "\"name\":-1.1234567890",
+			},
 		},
 
 		{
 			desc: "negative with dp greater than 10 round up",
 			input: input{
-				value: -1.12345678905,
-				name:  "name",
+				Value: -1.12345678905,
+				Name:  "name",
 			},
-			expected: "\"name\": -1.1234567891",
+			expected: expected{
+				Result:       "\"name\": -1.1234567891",
+				ResultRemote: "\"name\":-1.1234567891",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtFloat64(d.input.value, d.input.name)
+		remote = false
+		result := FmtFloat64(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtFloat64(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtFloat64s(t *testing.T) {
+func Test_FmtFloat64s(t *testing.T) {
 	type input struct {
-		value []float64
-		name  string
+		Value []float64
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []float64{1.2},
-				name:  "name",
+				Value: []float64{1.2},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1.2000000000\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1.2000000000\n\t]",
+				ResultRemote: "\"name\":[1.2000000000]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []float64{1.2, 3.4},
-				name:  "name",
+				Value: []float64{1.2, 3.4},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1.2000000000,\n\t\t3.4000000000\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1.2000000000,\n\t\t3.4000000000\n\t]",
+				ResultRemote: "\"name\":[1.2000000000,3.4000000000]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []float64{},
-				name:  "name",
+				Value: []float64{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtFloat64s(d.input.value, d.input.name)
+		remote = false
+		result := FmtFloat64s(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtFloat64s(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInt(t *testing.T) {
+func Test_FmtInt(t *testing.T) {
 	type input struct {
-		value int
-		name  string
+		Value int
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "zero",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": 0",
+			expected: expected{
+				Result:       "\"name\": 0",
+				ResultRemote: "\"name\":0",
+			},
 		},
 
 		{
 			desc: "positive",
 			input: input{
-				value: 1,
-				name:  "name",
+				Value: 1,
+				Name:  "name",
 			},
-			expected: "\"name\": 1",
+			expected: expected{
+				Result:       "\"name\": 1",
+				ResultRemote: "\"name\":1",
+			},
 		},
 
 		{
 			desc: "negative",
 			input: input{
-				value: -1,
-				name:  "name",
+				Value: -1,
+				Name:  "name",
 			},
-			expected: "\"name\": -1",
+			expected: expected{
+				Result:       "\"name\": -1",
+				ResultRemote: "\"name\":-1",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInt(d.input.value, d.input.name)
+		remote = false
+		result := FmtInt(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInt(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInts(t *testing.T) {
+func Test_FmtInts(t *testing.T) {
 	type input struct {
-		value []int
-		name  string
+		Value []int
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []int{1},
-				name:  "name",
+				Value: []int{1},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1\n\t]",
+				ResultRemote: "\"name\":[1]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []int{1, 2},
-				name:  "name",
+				Value: []int{1, 2},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+				ResultRemote: "\"name\":[1,2]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []int{},
-				name:  "name",
+				Value: []int{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInts(d.input.value, d.input.name)
+		remote = false
+		result := FmtInts(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInts(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInt32(t *testing.T) {
+func Test_FmtInt32(t *testing.T) {
 	type input struct {
-		value int32
-		name  string
+		Value int32
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "zero",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": 0",
+			expected: expected{
+				Result:       "\"name\": 0",
+				ResultRemote: "\"name\":0",
+			},
 		},
 
 		{
 			desc: "positive",
 			input: input{
-				value: 1,
-				name:  "name",
+				Value: 1,
+				Name:  "name",
 			},
-			expected: "\"name\": 1",
+			expected: expected{
+				Result:       "\"name\": 1",
+				ResultRemote: "\"name\":1",
+			},
 		},
 
 		{
 			desc: "negative",
 			input: input{
-				value: -1,
-				name:  "name",
+				Value: -1,
+				Name:  "name",
 			},
-			expected: "\"name\": -1",
+			expected: expected{
+				Result:       "\"name\": -1",
+				ResultRemote: "\"name\":-1",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInt32(d.input.value, d.input.name)
+		remote = false
+		result := FmtInt32(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInt32(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInt32s(t *testing.T) {
+func Test_FmtInt32s(t *testing.T) {
 	type input struct {
-		value []int32
-		name  string
+		Value []int32
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []int32{1},
-				name:  "name",
+				Value: []int32{1},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1\n\t]",
+				ResultRemote: "\"name\":[1]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []int32{1, 2},
-				name:  "name",
+				Value: []int32{1, 2},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+				ResultRemote: "\"name\":[1,2]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []int32{},
-				name:  "name",
+				Value: []int32{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInt32s(d.input.value, d.input.name)
+		remote = false
+		result := FmtInt32s(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInt32s(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInt64(t *testing.T) {
+func Test_FmtInt64(t *testing.T) {
 	type input struct {
-		value int64
-		name  string
+		Value int64
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "zero",
 			input: input{
-				value: 0,
-				name:  "name",
+				Value: 0,
+				Name:  "name",
 			},
-			expected: "\"name\": 0",
+			expected: expected{
+				Result:       "\"name\": 0",
+				ResultRemote: "\"name\":0",
+			},
 		},
 
 		{
 			desc: "positive",
 			input: input{
-				value: 1,
-				name:  "name",
+				Value: 1,
+				Name:  "name",
 			},
-			expected: "\"name\": 1",
+			expected: expected{
+				Result:       "\"name\": 1",
+				ResultRemote: "\"name\":1",
+			},
 		},
 
 		{
 			desc: "negative",
 			input: input{
-				value: -1,
-				name:  "name",
+				Value: -1,
+				Name:  "name",
 			},
-			expected: "\"name\": -1",
+			expected: expected{
+				Result:       "\"name\": -1",
+				ResultRemote: "\"name\":-1",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInt64(d.input.value, d.input.name)
+		remote = false
+		result := FmtInt64(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInt64(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtInt64s(t *testing.T) {
+func Test_FmtInt64s(t *testing.T) {
 	type input struct {
-		value []int64
-		name  string
+		Value []int64
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []int64{1},
-				name:  "name",
+				Value: []int64{1},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1\n\t]",
+				ResultRemote: "\"name\":[1]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []int64{1, 2},
-				name:  "name",
+				Value: []int64{1, 2},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t1,\n\t\t2\n\t]",
+				ResultRemote: "\"name\":[1,2]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []int64{},
-				name:  "name",
+				Value: []int64{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtInt64s(d.input.value, d.input.name)
+		remote = false
+		result := FmtInt64s(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtInt64s(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtString(t *testing.T) {
+func Test_FmtString(t *testing.T) {
 	type input struct {
-		value string
-		name  string
+		Value string
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "string",
 			input: input{
-				value: "string",
-				name:  "name",
+				Value: "string",
+				Name:  "name",
 			},
-			expected: "\"name\": \"string\"",
+			expected: expected{
+				Result:       "\"name\": \"string\"",
+				ResultRemote: "\"name\":\"string\"",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: "",
-				name:  "name",
+				Value: "",
+				Name:  "name",
 			},
-			expected: "\"name\": \"\"",
+			expected: expected{
+				Result:       "\"name\": \"\"",
+				ResultRemote: "\"name\":\"\"",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtString(d.input.value, d.input.name)
+		remote = false
+		result := FmtString(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtString(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtStrings(t *testing.T) {
+func Test_FmtStrings(t *testing.T) {
 	type input struct {
-		value []string
-		name  string
+		Value []string
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []string{"string"},
-				name:  "name",
+				Value: []string{"string"},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"string\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"string\"\n\t]",
+				ResultRemote: "\"name\":[\"string\"]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []string{"string", ""},
-				name:  "name",
+				Value: []string{"string", ""},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"string\",\n\t\t\"\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"string\",\n\t\t\"\"\n\t]",
+				ResultRemote: "\"name\":[\"string\",\"\"]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []string{},
-				name:  "name",
+				Value: []string{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtStrings(d.input.value, d.input.name)
+		remote = false
+		result := FmtStrings(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtStrings(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtTime(t *testing.T) {
+func Test_FmtTime(t *testing.T) {
 	parsedTime, err := time.Parse(time.RFC3339Nano, "2006-01-02T15:04:05.999999999Z")
 	if err != nil {
 		t.Fatal("Failed parsing time as RFC3339Nano", err)
 	}
 	type input struct {
-		value time.Time
-		name  string
+		Value time.Time
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "time",
 			input: input{
-				value: parsedTime,
-				name:  "name",
+				Value: parsedTime,
+				Name:  "name",
 			},
-			expected: "\"name\": \"2006-01-02T15:04:05.999999999Z\"",
+			expected: expected{
+				Result:       "\"name\": \"2006-01-02T15:04:05.999999999Z\"",
+				ResultRemote: "\"name\":\"2006-01-02T15:04:05.999999999Z\"",
+			},
 		},
 
 		{
 			desc: "zero time",
 			input: input{
-				value: time.Time{},
-				name:  "name",
+				Value: time.Time{},
+				Name:  "name",
 			},
-			expected: "\"name\": \"0001-01-01T00:00:00Z\"",
+			expected: expected{
+				Result:       "\"name\": \"0001-01-01T00:00:00Z\"",
+				ResultRemote: "\"name\":\"0001-01-01T00:00:00Z\"",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtTime(d.input.value, d.input.name)
+		remote = false
+		result := FmtTime(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtTime(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtTimes(t *testing.T) {
+func Test_FmtTimes(t *testing.T) {
 	parsedTime, err := time.Parse(time.RFC3339Nano, "2006-01-02T15:04:05.999999999Z")
 	if err != nil {
 		t.Fatal("Failed parsing time as RFC3339Nano", err)
 	}
 	type input struct {
-		value []time.Time
-		name  string
+		Value []time.Time
+		Name  string
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value: []time.Time{parsedTime},
-				name:  "name",
+				Value: []time.Time{parsedTime},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"2006-01-02T15:04:05.999999999Z\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"2006-01-02T15:04:05.999999999Z\"\n\t]",
+				ResultRemote: "\"name\":[\"2006-01-02T15:04:05.999999999Z\"]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value: []time.Time{parsedTime, time.Time{}},
-				name:  "name",
+				Value: []time.Time{parsedTime, time.Time{}},
+				Name:  "name",
 			},
-			expected: "\"name\": [\n\t\t\"2006-01-02T15:04:05.999999999Z\",\n\t\t\"0001-01-01T00:00:00Z\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"2006-01-02T15:04:05.999999999Z\",\n\t\t\"0001-01-01T00:00:00Z\"\n\t]",
+				ResultRemote: "\"name\":[\"2006-01-02T15:04:05.999999999Z\",\"0001-01-01T00:00:00Z\"]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value: []time.Time{},
-				name:  "name",
+				Value: []time.Time{},
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value: nil,
-				name:  "name",
+				Value: nil,
+				Name:  "name",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := FmtTimes(d.input.value, d.input.name)
+		remote = false
+		result := FmtTimes(d.input.Value, d.input.Name)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := FmtTimes(d.input.Value, d.input.Name)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestFmtSlice(t *testing.T) {
+func Test_FmtSlice(t *testing.T) {
 	type input struct {
-		value  []interface{}
-		name   string
+		Value  []interface{}
+		Name   string
 		format string
 	}
+	type expected struct {
+		Result       string
+		ResultRemote string
+	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				value:  []interface{}{"string"},
-				name:   "name",
+				Value:  []interface{}{"string"},
+				Name:   "name",
 				format: "%q",
 			},
-			expected: "\"name\": [\n\t\t\"string\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"string\"\n\t]",
+				ResultRemote: "\"name\":[\"string\"]",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				value:  []interface{}{"string", "also string"},
-				name:   "name",
+				Value:  []interface{}{"string", "also string"},
+				Name:   "name",
 				format: "%q",
 			},
-			expected: "\"name\": [\n\t\t\"string\",\n\t\t\"also string\"\n\t]",
+			expected: expected{
+				Result:       "\"name\": [\n\t\t\"string\",\n\t\t\"also string\"\n\t]",
+				ResultRemote: "\"name\":[\"string\",\"also string\"]",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				value:  []interface{}{},
-				name:   "name",
+				Value:  []interface{}{},
+				Name:   "name",
 				format: "",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				value:  nil,
-				name:   "name",
+				Value:  nil,
+				Name:   "name",
 				format: "",
 			},
-			expected: "\"name\": []",
+			expected: expected{
+				Result:       "\"name\": []",
+				ResultRemote: "\"name\":[]",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := fmtSlice(d.input.value, d.input.name, d.input.format)
+		remote = false
+		result := fmtSlice(d.input.Value, d.input.Name, d.input.format)
 
-		if string(result) != d.expected {
+		if string(result) != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "string(result)",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     string(result),
+			}))
+		}
+
+		remote = true
+		resultRemote := fmtSlice(d.input.Value, d.input.Name, d.input.format)
+
+		if string(resultRemote) != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "string(resultRemote)",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     string(resultRemote),
 			}))
 		}
 	}
 }
 
-func TestRuntimeLineAndFuncName(t *testing.T) {
+func Test_runtimeLineAndFuncName(t *testing.T) {
 	line, funcName := runtimeLineAndFuncName(0)
 	pc, _, l, _ := runtime.Caller(0)
 	expectedLine := l - 1
@@ -1640,134 +2424,199 @@ func TestRuntimeLineAndFuncName(t *testing.T) {
 	}
 }
 
-func TestFmtFields(t *testing.T) {
+func Test_FmtFields(t *testing.T) {
+	type expected struct {
+		Result       string
+		ResultRemote string
+	}
 	var data = []struct {
 		desc     string
 		input    []Field
-		expected string
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: []Field{
 				Field("field"),
 			},
-			expected: "{\n\tfield\n}",
+			expected: expected{
+				Result:       "{\n\tfield\n}",
+				ResultRemote: "{field}",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: []Field{
 				Field("field"),
-				Field("also field"),
+				Field("also_field"),
 			},
-			expected: "{\n\tfield,\n\talso field\n}",
+			expected: expected{
+				Result:       "{\n\tfield,\n\talso_field\n}",
+				ResultRemote: "{field,also_field}",
+			},
 		},
 
 		{
-			desc:     "empty",
-			input:    []Field{},
-			expected: "",
+			desc:  "empty",
+			input: []Field{},
+			expected: expected{
+				Result:       "",
+				ResultRemote: "",
+			},
 		},
 
 		{
-			desc:     "nil",
-			input:    nil,
-			expected: "",
+			desc:  "nil",
+			input: nil,
+			expected: expected{
+				Result:       "",
+				ResultRemote: "",
+			},
 		},
 	}
 
 	for i, d := range data {
+		remote = false
 		result := fmtFields(d.input)
 
-		if result != d.expected {
+		if result != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     result,
+			}))
+		}
+
+		remote = true
+		resultRemote := fmtFields(d.input)
+
+		if resultRemote != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "resultRemote",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     resultRemote,
 			}))
 		}
 	}
 }
 
-func TestFmtLog(t *testing.T) {
+func Test_FmtLog(t *testing.T) {
 	type input struct {
-		message       string
-		correlationId string
-		funcName      string
-		line          int
-		fields        []Field
+		Message       string
+		CorrelationId string
+		FuncName      string
+		Line          int
+		Fields        []Field
+		Remote        bool
+	}
+	type expected struct {
+		Result       string
+		ResultRemote string
 	}
 	var data = []struct {
-		desc string
-		input
-		expected string
+		desc     string
+		input    input
+		expected expected
 	}{
 		{
 			desc: "single",
 			input: input{
-				message:       "message",
-				correlationId: "correlationId",
-				funcName:      "funcName",
-				line:          0,
-				fields: []Field{
+				Message:       "message",
+				CorrelationId: "correlationId",
+				FuncName:      "funcName",
+				Line:          0,
+				Fields: []Field{
 					Field("field"),
 				},
 			},
-			expected: "[message] [correlationId] [funcName:0] {\n\tfield\n}\x1b[0m",
+			expected: expected{
+				Result:       "[message] [correlationId] [funcName:0] {\n\tfield\n}\x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] {field}\x1b[0m",
+			},
 		},
 
 		{
 			desc: "multi",
 			input: input{
-				message:       "message",
-				correlationId: "correlationId",
-				funcName:      "funcName",
-				line:          0,
-				fields: []Field{
+				Message:       "message",
+				CorrelationId: "correlationId",
+				FuncName:      "funcName",
+				Line:          0,
+				Fields: []Field{
 					Field("field"),
-					Field("also field"),
+					Field("also_field"),
 				},
 			},
-			expected: "[message] [correlationId] [funcName:0] {\n\tfield,\n\talso field\n}\x1b[0m",
+			expected: expected{
+				Result:       "[message] [correlationId] [funcName:0] {\n\tfield,\n\talso_field\n}\x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] {field,also_field}\x1b[0m",
+			},
 		},
 
 		{
 			desc: "empty",
 			input: input{
-				message:       "message",
-				correlationId: "correlationId",
-				funcName:      "funcName",
-				line:          0,
-				fields:        []Field{},
+				Message:       "message",
+				CorrelationId: "correlationId",
+				FuncName:      "funcName",
+				Line:          0,
+				Fields:        []Field{},
 			},
-			expected: "[message] [correlationId] [funcName:0] \x1b[0m",
+			expected: expected{
+				Result:       "[message] [correlationId] [funcName:0] \x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] \x1b[0m",
+			},
 		},
 
 		{
 			desc: "nil",
 			input: input{
-				message:       "message",
-				correlationId: "correlationId",
-				funcName:      "funcName",
-				line:          0,
-				fields:        nil,
+				Message:       "message",
+				CorrelationId: "correlationId",
+				FuncName:      "funcName",
+				Line:          0,
+				Fields:        nil,
 			},
-			expected: "[message] [correlationId] [funcName:0] \x1b[0m",
+			expected: expected{
+				Result:       "[message] [correlationId] [funcName:0] \x1b[0m",
+				ResultRemote: "[message] [correlationId] [funcName:0] \x1b[0m",
+			},
 		},
 	}
 
 	for i, d := range data {
-		result := fmtLog(d.input.message, d.input.correlationId, d.input.funcName, d.input.line, d.input.fields)
+		remote = false
+		result := fmtLog(d.input.Message, d.input.CorrelationId, d.input.FuncName, d.input.Line, d.input.Fields)
 
-		if result != d.expected {
+		if result != d.expected.Result {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result",
 				Desc:       d.desc,
 				At:         i,
-				Expected:   d.expected,
+				Input:      d.input,
+				Expected:   d.expected.Result,
 				Result:     result,
+			}))
+		}
+
+		remote = true
+		resultRemote := fmtLog(d.input.Message, d.input.CorrelationId, d.input.FuncName, d.input.Line, d.input.Fields)
+
+		if resultRemote != d.expected.ResultRemote {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "resultRemote",
+				Desc:       d.desc,
+				At:         i,
+				Input:      d.input,
+				Expected:   d.expected.ResultRemote,
+				Result:     resultRemote,
 			}))
 		}
 	}
