@@ -26,6 +26,7 @@ import (
 	go_log "github.com/caigwatkin/go/log"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 )
 
@@ -38,7 +39,8 @@ func Defaults(router *chi.Mux, headersClient go_headers.Client, logClient go_log
 	router.Use(middleware.URLFormat)
 	router.Use(populateContext(headersClient))
 	router.Use(logInfoRequests(logClient, excludePathsForLogInfoRequests))
-	router.Use(middleware.Compress(5))
+	router.Use(NewCors().Handler)
+	router.Use(middleware.Compress(5, "application/json"))
 }
 
 func populateContext(headersClient go_headers.Client) func(next http.Handler) http.Handler {
@@ -79,4 +81,24 @@ func logInfoRequests(logClient go_log.Client, excludePaths []string) func(next h
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func NewCors() *cors.Cors {
+	return cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"},
+		AllowedHeaders: []string{
+			"Accept",
+			"Accept-Language",
+			"Authorization",
+			"Content-Disposition",
+			"Content-Type",
+		},
+		ExposedHeaders: []string{
+			"Content-Type",
+			"Location",
+		},
+		AllowCredentials: true,
+		MaxAge:           300,
+	})
 }
