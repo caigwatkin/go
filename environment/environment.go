@@ -9,15 +9,18 @@ import (
 )
 
 type Environment struct {
-	App    string
-	Debug  bool
-	Remote bool
-	Port   int64
+	App         string
+	DatabaseUrl string
+	Debug       bool
+	Remote      bool
+	Port        int64
 }
 
 // TODO: test
 func New(app string) (env Environment, err error) {
 	log.Println("Generating environment", app)
+
+	databaseUrl := os.Getenv("DATABASE_URL")
 
 	remote := false
 	if osDyno := os.Getenv("DYNO"); osDyno != "" {
@@ -43,10 +46,11 @@ func New(app string) (env Environment, err error) {
 	}
 
 	env = Environment{
-		App:    app,
-		Debug:  debug,
-		Remote: remote,
-		Port:   port,
+		App:         app,
+		DatabaseUrl: databaseUrl,
+		Debug:       debug,
+		Remote:      remote,
+		Port:        port,
 	}
 
 	log.Println("Generated environment", env)
