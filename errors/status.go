@@ -27,10 +27,15 @@ import (
 //
 // Implements error interface
 type Status struct {
-	At       string
-	Code     int
-	Message  string
-	Metadata map[string]interface{}
+	At      string
+	Code    int
+	Message string
+	Items   []Item
+}
+
+type Item struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
 // NewStatus with code and message
@@ -43,20 +48,20 @@ func Statusf(code int, format string, args ...interface{}) Status {
 	return newStatus(1, code, fmt.Sprintf(format, args...), nil)
 }
 
-// NewStatusWithMetadata with code and message
+// NewStatusWithItems with code, message, and items
 //
-// Metadata can be useful to add extra context to the error through
-func NewStatusWithMetadata(code int, message string, metadata map[string]interface{}) Status {
-	return newStatus(1, code, message, metadata)
+// Items can be useful to add extra context to the error
+func NewStatusWithItems(code int, message string, items []Item) Status {
+	return newStatus(1, code, message, items)
 }
 
-func newStatus(atSkip, code int, message string, metadata map[string]interface{}) Status {
+func newStatus(atSkip, code int, message string, items []Item) Status {
 	pc, _, lineNumber, _ := runtime.Caller(atSkip + 1)
 	s := Status{
-		At:       fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineNumber),
-		Code:     code,
-		Message:  http.StatusText(code),
-		Metadata: metadata,
+		At:      fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineNumber),
+		Code:    code,
+		Message: http.StatusText(code),
+		Items:   items,
 	}
 	if message != "" {
 		s.Message = fmt.Sprintf("%s: %s", s.Message, message)
@@ -83,24 +88,12 @@ func (s Status) Error() string {
 	return fmt.Sprintf("%q: %q, %q: %q, %q: %q", "code", s.Code, "message", s.Message, "at", s.At)
 }
 
-// Render the status
-//
-// Most status codes do not render their message or metadata content
-func (s Status) Render() []byte {
-	v := map[string]interface{}{
-		"code": s.Code,
+// Render items
+func (s Status) RenderItems() []byte {
+	if len(s.Items) == 0 {
+		return nil
 	}
-	switch s.Code {
-	default:
-		v["message"] = http.StatusText(s.Code)
-	case http.StatusBadRequest,
-		http.StatusUnprocessableEntity:
-		v["message"] = s.Message
-		if s.Metadata != nil {
-			v["metadata"] = s.Metadata
-		}
-	}
-	b, err := json.MarshalIndent(v, "", "\t")
+	b, err := json.Marshal(s.Items)
 	if err != nil {
 		return nil
 	}

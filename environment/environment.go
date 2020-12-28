@@ -22,10 +22,8 @@ func New(app string) (env Environment, err error) {
 
 	databaseUrl := os.Getenv("DATABASE_URL")
 
-	remote := false
-	if osDyno := os.Getenv("DYNO"); osDyno != "" {
-		remote = true
-	}
+	remote := os.Getenv("REMOTE") != "" ||
+		os.Getenv("DYNO") != ""
 
 	debug := !remote
 	if osDebug := os.Getenv("DEBUG"); osDebug != "" {

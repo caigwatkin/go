@@ -18,15 +18,16 @@ package errors
 
 import (
 	"net/http"
+	"reflect"
 	"testing"
 
 	go_testing "github.com/caigwatkin/go/testing"
 )
 
-func TestNewStatus(t *testing.T) {
+func Test_NewStatus(t *testing.T) {
 	type input struct {
-		code    int
-		message string
+		Code    int
+		Message string
 	}
 	var data = []struct {
 		desc string
@@ -36,8 +37,8 @@ func TestNewStatus(t *testing.T) {
 		{
 			desc: "status",
 			input: input{
-				code:    http.StatusAccepted,
-				message: "This has been accepted",
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
 			},
 			expected: Status{
 				Code:    http.StatusAccepted,
@@ -47,9 +48,9 @@ func TestNewStatus(t *testing.T) {
 	}
 
 	for i, d := range data {
-		result := NewStatus(d.input.code, d.input.message)
+		result := NewStatus(d.input.Code, d.input.Message)
 
-		if result.Code != d.expected.Code {
+		if !reflect.DeepEqual(result, d.expected) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
@@ -58,32 +59,14 @@ func TestNewStatus(t *testing.T) {
 				Result:     result.Code,
 			}))
 		}
-		if result.Message != d.expected.Message {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Message",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   d.expected.Message,
-				Result:     result.Message,
-			}))
-		}
-		if len(result.Metadata) != len(d.expected.Metadata) {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Metadata",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   len(d.expected.Metadata),
-				Result:     len(result.Metadata),
-			}))
-		}
 	}
 }
 
-func TestStatusf(t *testing.T) {
+func Test_Statusf(t *testing.T) {
 	type input struct {
-		code    int
-		message string
-		args    []interface{}
+		Code    int
+		Message string
+		Args    []interface{}
 	}
 	var data = []struct {
 		desc string
@@ -93,9 +76,9 @@ func TestStatusf(t *testing.T) {
 		{
 			desc: "status no args",
 			input: input{
-				code:    http.StatusAccepted,
-				message: "This has been accepted",
-				args:    nil,
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
+				Args:    nil,
 			},
 			expected: Status{
 				Code:    http.StatusAccepted,
@@ -106,9 +89,9 @@ func TestStatusf(t *testing.T) {
 		{
 			desc: "status with args",
 			input: input{
-				code:    http.StatusAccepted,
-				message: "This has been %s",
-				args:    []interface{}{"accepted"},
+				Code:    http.StatusAccepted,
+				Message: "This has been %s",
+				Args:    []interface{}{"accepted"},
 			},
 			expected: Status{
 				Code:    http.StatusAccepted,
@@ -118,9 +101,9 @@ func TestStatusf(t *testing.T) {
 	}
 
 	for i, d := range data {
-		result := Statusf(d.input.code, d.input.message, d.input.args...)
+		result := Statusf(d.input.Code, d.input.Message, d.input.Args...)
 
-		if result.Code != d.expected.Code {
+		if !reflect.DeepEqual(result, d.expected) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
@@ -129,32 +112,14 @@ func TestStatusf(t *testing.T) {
 				Result:     result.Code,
 			}))
 		}
-		if result.Message != d.expected.Message {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Message",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   d.expected.Message,
-				Result:     result.Message,
-			}))
-		}
-		if len(result.Metadata) != len(d.expected.Metadata) {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Metadata",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   len(d.expected.Metadata),
-				Result:     len(result.Metadata),
-			}))
-		}
 	}
 }
 
-func TestNewStatusWithMetadata(t *testing.T) {
+func Test_NewStatusWithItems(t *testing.T) {
 	type input struct {
-		code     int
-		message  string
-		metadata map[string]interface{}
+		Code    int
+		Message string
+		Items   []Item
 	}
 	var data = []struct {
 		desc string
@@ -164,36 +129,46 @@ func TestNewStatusWithMetadata(t *testing.T) {
 		{
 			desc: "status no metadata",
 			input: input{
-				code:     http.StatusAccepted,
-				message:  "This has been accepted",
-				metadata: nil,
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
+				Items:   nil,
 			},
 			expected: Status{
-				Code:     http.StatusAccepted,
-				Message:  "Accepted: This has been accepted",
-				Metadata: nil,
+				Code:    http.StatusAccepted,
+				Message: "Accepted: This has been accepted",
+				Items:   nil,
 			},
 		},
 
 		{
 			desc: "status with metadata",
 			input: input{
-				code:     http.StatusAccepted,
-				message:  "This has been accepted",
-				metadata: map[string]interface{}{"some": "metadata"},
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
+				Items: []Item{
+					{
+						Field:   "field",
+						Message: "message",
+					},
+				},
 			},
 			expected: Status{
-				Code:     http.StatusAccepted,
-				Message:  "Accepted: This has been accepted",
-				Metadata: map[string]interface{}{"some": "metadata"},
+				Code:    http.StatusAccepted,
+				Message: "Accepted: This has been accepted",
+				Items: []Item{
+					{
+						Field:   "field",
+						Message: "message",
+					},
+				},
 			},
 		},
 	}
 
 	for i, d := range data {
-		result := NewStatusWithMetadata(d.input.code, d.input.message, d.input.metadata)
+		result := NewStatusWithItems(d.input.Code, d.input.Message, d.input.Items)
 
-		if result.Code != d.expected.Code {
+		if !reflect.DeepEqual(result, d.expected) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
@@ -202,28 +177,10 @@ func TestNewStatusWithMetadata(t *testing.T) {
 				Result:     result.Code,
 			}))
 		}
-		if result.Message != d.expected.Message {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Message",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   d.expected.Message,
-				Result:     result.Message,
-			}))
-		}
-		if len(result.Metadata) != len(d.expected.Metadata) {
-			t.Error(go_testing.Errorf(go_testing.Error{
-				Unexpected: "result.Metadata",
-				Desc:       d.desc,
-				At:         i,
-				Expected:   len(d.expected.Metadata),
-				Result:     len(result.Metadata),
-			}))
-		}
 	}
 }
 
-func TestStatusCode(t *testing.T) {
+func Test_StatusCode(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    error
@@ -263,7 +220,7 @@ func TestStatusCode(t *testing.T) {
 	}
 }
 
-func TestIsStatus(t *testing.T) {
+func Test_IsStatus(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    error
@@ -297,114 +254,60 @@ func TestIsStatus(t *testing.T) {
 	}
 }
 
-func TestRender(t *testing.T) {
+func Test_Status_RenderItems(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    Status
-		expected string
+		expected []byte
 	}{
 		{
-			desc: "status bad request",
+			desc: "none",
 			input: Status{
-				Code:     http.StatusBadRequest,
-				Message:  "Some message",
-				Metadata: nil,
+				Items: nil,
 			},
-			expected: `{
-	"code": 400,
-	"message": "Some message"
-}`,
+			expected: nil,
 		},
-
 		{
-			desc: "status unprocessable entity",
+			desc: "empty",
 			input: Status{
-				Code:     http.StatusUnprocessableEntity,
-				Message:  "Some message",
-				Metadata: nil,
+				Items: []Item{},
 			},
-			expected: `{
-	"code": 422,
-	"message": "Some message"
-}`,
+			expected: nil,
 		},
-
 		{
-			desc: "status other, message overwritten with status text",
+			desc: "item",
 			input: Status{
-				Code:     http.StatusAccepted,
-				Message:  "Some message",
-				Metadata: nil,
+				Items: []Item{
+					{
+						Field:   "field",
+						Message: "message",
+					},
+				},
 			},
-			expected: `{
-	"code": 202,
-	"message": "Accepted"
-}`,
+			expected: []byte("[{\"field\":\"field\",\"message\":\"message\"}]"),
 		},
-
 		{
-			desc: "status 0, no message",
+			desc: "item",
 			input: Status{
-				Code:     0,
-				Message:  "",
-				Metadata: nil,
+				Items: []Item{
+					{
+						Field:   "field",
+						Message: "message",
+					},
+					{
+						Field:   "field_2",
+						Message: "message_2",
+					},
+				},
 			},
-			expected: `{
-	"code": 0,
-	"message": ""
-}`,
-		},
-
-		{
-			desc: "status bad request with metadata",
-			input: Status{
-				Code:     http.StatusBadRequest,
-				Message:  "Some message",
-				Metadata: map[string]interface{}{"some": "metadata"},
-			},
-			expected: `{
-	"code": 400,
-	"message": "Some message",
-	"metadata": {
-		"some": "metadata"
-	}
-}`,
-		},
-
-		{
-			desc: "status unprocessable entity with metadata",
-			input: Status{
-				Code:     http.StatusUnprocessableEntity,
-				Message:  "Some message",
-				Metadata: map[string]interface{}{"some": "metadata"},
-			},
-			expected: `{
-	"code": 422,
-	"message": "Some message",
-	"metadata": {
-		"some": "metadata"
-	}
-}`,
-		},
-
-		{
-			desc: "status other with metadata",
-			input: Status{
-				Code:     http.StatusAccepted,
-				Message:  "Accepted",
-				Metadata: map[string]interface{}{"some": "metadata"},
-			},
-			expected: `{
-	"code": 202,
-	"message": "Accepted"
-}`,
+			expected: []byte("[{\"field\":\"field\",\"message\":\"message\"},{\"field\":\"field_2\",\"message\":\"message_2\"}]"),
 		},
 	}
 
 	for i, d := range data {
-		result := d.input.Render()
+		result := d.input.RenderItems()
 
-		if string(result) != d.expected {
+		if !reflect.DeepEqual(result, d.expected) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result",
 				Desc:       d.desc,
