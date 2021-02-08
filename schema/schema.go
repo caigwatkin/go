@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
-	"path/filepath"
 
+	go_environment "github.com/caigwatkin/go/environment"
 	go_errors "github.com/caigwatkin/go/errors"
 	go_log "github.com/caigwatkin/go/log"
 	"github.com/xeipuuv/gojsonschema"
@@ -16,8 +15,12 @@ type Client interface {
 	Validate(ctx context.Context, schemaFileName string, bytes []byte) error
 }
 
-func NewClient(ctx context.Context, logClient go_log.Client, schemaFileNames []string) (Client, error) {
-	logClient.Info(ctx, "Initializing", go_log.FmtStrings(schemaFileNames, "schemaFileNames"))
+type Config struct {
+	Env go_environment.Environment
+}
+
+func NewClient(ctx context.Context, config Config, logClient go_log.Client, schemaFileNames []string) (Client, error) {
+	logClient.Info(ctx, "Initializing", go_log.FmtAny(config, "config"), go_log.FmtStrings(schemaFileNames, "schemaFileNames"))
 
 	type schemaAndFileNameAndError struct {
 		Err      error
@@ -28,7 +31,7 @@ func NewClient(ctx context.Context, logClient go_log.Client, schemaFileNames []s
 	for _, schemaFileName := range schemaFileNames {
 		go func(schemaFileName string) {
 			logClient.Info(ctx, "Loading", go_log.FmtString("schemaFileName", schemaFileName))
-			schema, err := loadSchemaFromFile(schemaFileName)
+			schema, err := loadSchemaFromFile(schemaFileName, config.Env.WorkingDirectory)
 			if err != nil {
 				ch <- schemaAndFileNameAndError{
 					Err: go_errors.Wrapf(err, "Failed to load schema %q from file", schemaFileName),
@@ -60,23 +63,20 @@ func NewClient(ctx context.Context, logClient go_log.Client, schemaFileNames []s
 
 	logClient.Info(ctx, "Initialized")
 	return &client{
+		config:           config,
 		logClient:        logClient,
 		schemaByFileName: schemaByFileName,
 	}, nil
 }
 
 type client struct {
+	config           Config
 	schemaByFileName map[string]*gojsonschema.Schema
 	logClient        go_log.Client
 }
 
-func loadSchemaFromFile(fileName string) (*gojsonschema.Schema, error) {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		return nil, go_errors.Wrap(err, "Failed to get directory")
-	}
-
-	schema, err := gojsonschema.NewSchema(gojsonschema.NewReferenceLoader(fmt.Sprintf("file://%s/%s", dir, fileName)))
+func loadSchemaFromFile(fileName, workingDirectory string) (*gojsonschema.Schema, error) {
+	schema, err := gojsonschema.NewSchema(gojsonschema.NewReferenceLoader(fmt.Sprintf("file://%s/%s", workingDirectory, fileName)))
 	if err != nil {
 		return nil, go_errors.Wrapf(err, "Failed to initialize schema for file %q", fileName)
 	}
