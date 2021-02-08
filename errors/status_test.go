@@ -290,6 +290,43 @@ func Test_IsStatus(t *testing.T) {
 	}
 }
 
+func Test_Error(t *testing.T) {
+	var data = []struct {
+		desc     string
+		input    Status
+		expected string
+	}{
+		{
+			desc:     "defaults",
+			input:    Status{},
+			expected: "\"code\": 0, \"message\": \"\", \"at\": \"\"",
+		},
+		{
+			desc: "values",
+			input: Status{
+				At:      "at",
+				Code:    http.StatusAccepted,
+				Message: "message",
+			},
+			expected: "\"code\": 202, \"message\": \"message\", \"at\": \"at\"",
+		},
+	}
+
+	for i, d := range data {
+		result := d.input.Error()
+
+		if result != d.expected {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected,
+				Result:     result,
+			}))
+		}
+	}
+}
+
 func Test_Status_RenderItems(t *testing.T) {
 	var data = []struct {
 		desc     string

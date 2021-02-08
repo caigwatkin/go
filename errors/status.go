@@ -85,7 +85,7 @@ func IsStatus(err error) bool {
 
 // Error so that Status objects can be treated as errors
 func (s Status) Error() string {
-	return fmt.Sprintf("%q: %q, %q: %q, %q: %q", "code", s.Code, "message", s.Message, "at", s.At)
+	return fmt.Sprintf("%q: %d, %q: %q, %q: %q", "code", s.Code, "message", s.Message, "at", s.At)
 }
 
 // Render items
