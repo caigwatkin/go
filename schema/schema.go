@@ -88,7 +88,11 @@ func (c client) Validate(ctx context.Context, schemaFileName string, bytes []byt
 	c.logClient.Info(ctx, "Validating", go_log.FmtString(schemaFileName, "schemaFileName"), go_log.FmtInt(len(bytes), "len(bytes)"))
 
 	if len(bytes) == 0 {
-		return go_errors.NewStatus(http.StatusBadRequest, "BODY_MUST_EXIST")
+		return go_errors.NewStatusWithItems(http.StatusBadRequest, "Failed to validate due to empty bytes", []go_errors.Item{
+			{
+				Message: "NO_DATA_RECEIVED",
+			},
+		})
 	}
 
 	schema, ok := c.schemaByFileName[schemaFileName]
