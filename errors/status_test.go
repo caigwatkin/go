@@ -50,13 +50,22 @@ func Test_NewStatus(t *testing.T) {
 	for i, d := range data {
 		result := NewStatus(d.input.Code, d.input.Message)
 
-		if !reflect.DeepEqual(result, d.expected) {
+		if !reflect.DeepEqual(result.Code, d.expected.Code) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   d.expected.Code,
 				Result:     result.Code,
+			}))
+		}
+		if !reflect.DeepEqual(result.Message, d.expected.Message) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Message",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Message,
+				Result:     result.Message,
 			}))
 		}
 	}
@@ -103,13 +112,22 @@ func Test_Statusf(t *testing.T) {
 	for i, d := range data {
 		result := Statusf(d.input.Code, d.input.Message, d.input.Args...)
 
-		if !reflect.DeepEqual(result, d.expected) {
+		if !reflect.DeepEqual(result.Code, d.expected.Code) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   d.expected.Code,
 				Result:     result.Code,
+			}))
+		}
+		if !reflect.DeepEqual(result.Message, d.expected.Message) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Message",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Message,
+				Result:     result.Message,
 			}))
 		}
 	}
@@ -168,13 +186,31 @@ func Test_NewStatusWithItems(t *testing.T) {
 	for i, d := range data {
 		result := NewStatusWithItems(d.input.Code, d.input.Message, d.input.Items)
 
-		if !reflect.DeepEqual(result, d.expected) {
+		if !reflect.DeepEqual(result.Code, d.expected.Code) {
 			t.Error(go_testing.Errorf(go_testing.Error{
 				Unexpected: "result.Code",
 				Desc:       d.desc,
 				At:         i,
 				Expected:   d.expected.Code,
 				Result:     result.Code,
+			}))
+		}
+		if !reflect.DeepEqual(result.Message, d.expected.Message) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Message",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Message,
+				Result:     result.Message,
+			}))
+		}
+		if !reflect.DeepEqual(result.Items, d.expected.Items) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Items",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Items,
+				Result:     result.Items,
 			}))
 		}
 	}
@@ -287,7 +323,7 @@ func Test_Status_RenderItems(t *testing.T) {
 			expected: []byte("[{\"field\":\"field\",\"message\":\"message\"}]"),
 		},
 		{
-			desc: "item",
+			desc: "items",
 			input: Status{
 				Items: []Item{
 					{
@@ -295,12 +331,12 @@ func Test_Status_RenderItems(t *testing.T) {
 						Message: "message",
 					},
 					{
-						Field:   "field_2",
+						Field:   "",
 						Message: "message_2",
 					},
 				},
 			},
-			expected: []byte("[{\"field\":\"field\",\"message\":\"message\"},{\"field\":\"field_2\",\"message\":\"message_2\"}]"),
+			expected: []byte("[{\"field\":\"field\",\"message\":\"message\"},{\"message\":\"message_2\"}]"),
 		},
 	}
 

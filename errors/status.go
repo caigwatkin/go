@@ -34,7 +34,7 @@ type Status struct {
 }
 
 type Item struct {
-	Field   string `json:"field"`
+	Field   string `json:"field,omitempty"`
 	Message string `json:"message"`
 }
 
