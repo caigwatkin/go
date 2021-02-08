@@ -102,7 +102,11 @@ func (c client) Validate(ctx context.Context, schemaFileName string, bytes []byt
 
 	result, err := schema.Validate(gojsonschema.NewBytesLoader(bytes))
 	if err != nil {
-		return go_errors.NewStatus(http.StatusBadRequest, err.Error())
+		return go_errors.NewStatusWithItems(http.StatusBadRequest, err.Error(), []go_errors.Item{
+			{
+				Message: "MUST_BE_VALID_JSON",
+			},
+		})
 	}
 
 	if !result.Valid() {
