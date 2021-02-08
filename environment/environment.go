@@ -9,11 +9,12 @@ import (
 )
 
 type Environment struct {
-	App         string
-	DatabaseUrl string
-	Debug       bool
-	Remote      bool
-	Port        int64
+	App              string
+	DatabaseUrl      string
+	Debug            bool
+	Remote           bool
+	Port             int64
+	WorkingDirectory string
 }
 
 // TODO: test
@@ -29,7 +30,7 @@ func New(app string) (env Environment, err error) {
 	if osDebug := os.Getenv("DEBUG"); osDebug != "" {
 		debug, err = strconv.ParseBool(osDebug)
 		if err != nil {
-			err = go_errors.Wrap(err, "Failed parsing environment variable DEBUG")
+			err = go_errors.Wrap(err, "Failed to parse environment variable DEBUG")
 			return
 		}
 	}
@@ -38,17 +39,24 @@ func New(app string) (env Environment, err error) {
 	if osPort := os.Getenv("PORT"); osPort != "" {
 		port, err = strconv.ParseInt(osPort, 10, 0)
 		if err != nil {
-			err = go_errors.Wrap(err, "Failed parsing environment variable PORT")
+			err = go_errors.Wrap(err, "Failed to parse environment variable PORT")
 			return
 		}
 	}
 
+	workingDirectory, err := os.Getwd()
+	if err != nil {
+		err = go_errors.Wrap(err, "Failed to get working directory")
+		return
+	}
+
 	env = Environment{
-		App:         app,
-		DatabaseUrl: databaseUrl,
-		Debug:       debug,
-		Remote:      remote,
-		Port:        port,
+		App:              app,
+		DatabaseUrl:      databaseUrl,
+		Debug:            debug,
+		Remote:           remote,
+		Port:             port,
+		WorkingDirectory: workingDirectory,
 	}
 
 	log.Println("Generated environment", env)
