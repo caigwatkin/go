@@ -299,7 +299,7 @@ func Test_Error(t *testing.T) {
 		{
 			desc:     "defaults",
 			input:    Status{},
-			expected: "\"code\": 0, \"message\": \"\", \"at\": \"\"",
+			expected: "\"code\": 0, \"message\": \"\", \"at\": \"\", \"items\": []",
 		},
 		{
 			desc: "values",
@@ -307,8 +307,14 @@ func Test_Error(t *testing.T) {
 				At:      "at",
 				Code:    http.StatusAccepted,
 				Message: "message",
+				Items: []Item{
+					{
+						Field:   "item_field",
+						Message: "item_message",
+					},
+				},
 			},
-			expected: "\"code\": 202, \"message\": \"message\", \"at\": \"at\"",
+			expected: "\"code\": 202, \"message\": \"message\", \"at\": \"at\", \"items\": [{item_field item_message}]",
 		},
 	}
 
