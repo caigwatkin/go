@@ -24,8 +24,8 @@ import (
 	go_context "github.com/caigwatkin/go/context"
 	go_headers "github.com/caigwatkin/go/http/headers"
 	go_log "github.com/caigwatkin/go/log"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/google/uuid"
 )

@@ -24,7 +24,7 @@ import (
 	go_middleware "github.com/caigwatkin/go/http/middleware"
 	go_render "github.com/caigwatkin/go/http/render"
 	go_log "github.com/caigwatkin/go/log"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 type Client interface {
