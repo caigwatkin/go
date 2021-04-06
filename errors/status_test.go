@@ -133,6 +133,98 @@ func Test_Statusf(t *testing.T) {
 	}
 }
 
+func Test_NewStatusWithCause(t *testing.T) {
+	err := New("error")
+	type input struct {
+		Code    int
+		Message string
+		Cause   error
+	}
+	var data = []struct {
+		desc string
+		input
+		expected Status
+	}{
+		{
+			desc: "status no cause",
+			input: input{
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
+				Cause:   nil,
+			},
+			expected: Status{
+				Code:    http.StatusAccepted,
+				Message: "Accepted: This has been accepted",
+				Cause:   nil,
+			},
+		},
+
+		{
+			desc: "status with cause",
+			input: input{
+				Cause:   err,
+				Code:    http.StatusAccepted,
+				Message: "This has been accepted",
+			},
+			expected: Status{
+				Cause:   err,
+				Code:    http.StatusAccepted,
+				Message: "Accepted: This has been accepted",
+			},
+		},
+	}
+
+	for i, d := range data {
+		result := NewStatusWithCause(d.input.Cause, d.input.Code, d.input.Message)
+
+		if d.expected.Cause != nil {
+			if result.Cause == nil || result.Cause.Error() != d.expected.Cause.Error() {
+				t.Error(go_testing.Errorf(go_testing.Error{
+					Unexpected: "result.Cause",
+					Desc:       d.desc,
+					At:         i,
+					Expected:   d.expected.Cause,
+					Result:     result.Cause,
+				}))
+			} else if result.Cause.Error() != d.expected.Cause.Error() {
+				t.Error(go_testing.Errorf(go_testing.Error{
+					Unexpected: "result.Cause.Error()",
+					Desc:       d.desc,
+					At:         i,
+					Expected:   d.expected.Cause.Error(),
+					Result:     result.Cause.Error(),
+				}))
+			}
+		} else if result.Cause != nil {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Cause",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Cause,
+				Result:     result.Cause,
+			}))
+		}
+		if !reflect.DeepEqual(result.Code, d.expected.Code) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Code",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Code,
+				Result:     result.Code,
+			}))
+		}
+		if !reflect.DeepEqual(result.Message, d.expected.Message) {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "result.Message",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   d.expected.Message,
+				Result:     result.Message,
+			}))
+		}
+	}
+}
+
 func Test_NewStatusWithItems(t *testing.T) {
 	type input struct {
 		Code    int
@@ -145,7 +237,7 @@ func Test_NewStatusWithItems(t *testing.T) {
 		expected Status
 	}{
 		{
-			desc: "status no metadata",
+			desc: "status no items",
 			input: input{
 				Code:    http.StatusAccepted,
 				Message: "This has been accepted",
@@ -159,7 +251,7 @@ func Test_NewStatusWithItems(t *testing.T) {
 		},
 
 		{
-			desc: "status with metadata",
+			desc: "status with items",
 			input: input{
 				Code:    http.StatusAccepted,
 				Message: "This has been accepted",

@@ -28,6 +28,7 @@ import (
 // Implements error interface
 type Status struct {
 	At      string
+	Cause   error
 	Code    int
 	Message string
 	Items   []Item
@@ -40,25 +41,33 @@ type Item struct {
 
 // NewStatus with code and message
 func NewStatus(code int, message string) Status {
-	return newStatus(1, code, message, nil)
+	return newStatus(1, nil, code, message, nil)
 }
 
 // Statusf with code and formatted message
 func Statusf(code int, format string, args ...interface{}) Status {
-	return newStatus(1, code, fmt.Sprintf(format, args...), nil)
+	return newStatus(1, nil, code, fmt.Sprintf(format, args...), nil)
+}
+
+// NewStatus with cause, code, and message
+//
+// Cause can be useful to record an error that caused a Status to be created
+func NewStatusWithCause(cause error, code int, message string) Status {
+	return newStatus(1, cause, code, message, nil)
 }
 
 // NewStatusWithItems with code, message, and items
 //
 // Items can be useful to add extra context to the error
 func NewStatusWithItems(code int, message string, items []Item) Status {
-	return newStatus(1, code, message, items)
+	return newStatus(1, nil, code, message, items)
 }
 
-func newStatus(atSkip, code int, message string, items []Item) Status {
+func newStatus(atSkip int, cause error, code int, message string, items []Item) Status {
 	pc, _, lineNumber, _ := runtime.Caller(atSkip + 1)
 	s := Status{
 		At:      fmt.Sprintf("%s:%d", runtime.FuncForPC(pc).Name(), lineNumber),
+		Cause:   cause,
 		Code:    code,
 		Message: http.StatusText(code),
 		Items:   items,
@@ -85,7 +94,7 @@ func IsStatus(err error) bool {
 
 // Error so that Status objects can be treated as errors
 func (s Status) Error() string {
-	return fmt.Sprintf("\"code\": %d, \"message\": %q, \"at\": %q, \"items\": %v", s.Code, s.Message, s.At, s.Items)
+	return fmt.Sprintf("\"code\": %d, \"message\": %q, \"at\": %q, \"items\": %v, \"cause\": %v", s.Code, s.Message, s.At, s.Items, s.Cause)
 }
 
 // Render items
