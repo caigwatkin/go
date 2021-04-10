@@ -17,6 +17,7 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
 	"testing"
@@ -391,12 +392,13 @@ func Test_Error(t *testing.T) {
 		{
 			desc:     "defaults",
 			input:    Status{},
-			expected: "\"code\": 0, \"message\": \"\", \"at\": \"\", \"items\": []",
+			expected: "Code: 0, Message: \"\", At: \"\", Items: []",
 		},
 		{
 			desc: "values",
 			input: Status{
 				At:      "at",
+				Cause:   fmt.Errorf("cause"),
 				Code:    http.StatusAccepted,
 				Message: "message",
 				Items: []Item{
@@ -406,7 +408,7 @@ func Test_Error(t *testing.T) {
 					},
 				},
 			},
-			expected: "\"code\": 202, \"message\": \"message\", \"at\": \"at\", \"items\": [{item_field item_message}]",
+			expected: "Code: 202, Message: \"message\", At: \"at\", Items: [{item_field item_message}], Cause: cause",
 		},
 	}
 
