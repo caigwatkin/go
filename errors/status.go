@@ -101,6 +101,24 @@ func (s Status) Error() string {
 	return e
 }
 
+func (s Status) MarshalJSON() ([]byte, error) {
+	v := map[string]interface{}{
+		"Code":    s.Code,
+		"Cause":   nil,
+		"Message": s.Message,
+		"At":      s.At,
+		"Items":   s.Items,
+	}
+	if s.Cause != nil {
+		v["Cause"] = s.Cause.Error()
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, Wrap(err, "Failed to json marshall")
+	}
+	return b, nil
+}
+
 // Render items
 func (s Status) RenderItems() []byte {
 	if len(s.Items) == 0 {

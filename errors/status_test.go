@@ -383,7 +383,7 @@ func Test_IsStatus(t *testing.T) {
 	}
 }
 
-func Test_Error(t *testing.T) {
+func Test_Status_Error(t *testing.T) {
 	var data = []struct {
 		desc     string
 		input    Status
@@ -423,6 +423,60 @@ func Test_Error(t *testing.T) {
 				Expected:   d.expected,
 				Result:     result,
 			}))
+		}
+	}
+}
+
+func Test_Status_MarshalJSON(t *testing.T) {
+	var data = []struct {
+		desc     string
+		input    Status
+		expected []byte
+	}{
+		{
+			desc:     "defaults",
+			input:    Status{},
+			expected: []byte("{\"At\":\"\",\"Cause\":null,\"Code\":0,\"Items\":null,\"Message\":\"\"}"),
+		},
+		{
+			desc: "values",
+			input: Status{
+				At:      "at",
+				Cause:   fmt.Errorf("cause"),
+				Code:    http.StatusAccepted,
+				Message: "message",
+				Items: []Item{
+					{
+						Field:   "item_field",
+						Message: "item_message",
+					},
+				},
+			},
+			expected: []byte("{\"At\":\"at\",\"Cause\":\"cause\",\"Code\":202,\"Items\":[{\"field\":\"item_field\",\"message\":\"item_message\"}],\"Message\":\"message\"}"),
+		},
+	}
+
+	for i, d := range data {
+		result, err := d.input.MarshalJSON()
+
+		if err != nil {
+			t.Error(go_testing.Errorf(go_testing.Error{
+				Unexpected: "err",
+				Desc:       d.desc,
+				At:         i,
+				Expected:   "NO ERROR",
+				Result:     err,
+			}))
+		} else {
+			if !reflect.DeepEqual(result, d.expected) {
+				t.Error(go_testing.Errorf(go_testing.Error{
+					Unexpected: "result",
+					Desc:       d.desc,
+					At:         i,
+					Expected:   string(d.expected),
+					Result:     string(result),
+				}))
+			}
 		}
 	}
 }
